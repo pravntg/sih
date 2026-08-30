@@ -1,0 +1,174 @@
+openapi: 3.0.3
+info:
+  title: Project ORCA — Agentic Marine Intelligence API
+  version: 1.0.0
+  description: OpenAPI 3.0 specification for ORCA Marine Intelligence backend services.
+
+paths:
+  /v1/chat:
+    post:
+      summary: Conversational reasoning and marine safety advisory
+      description: Process user intent, fetch verified datasets, and return structured recommendation with provenance.
+      operationId: postChatMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Successful advisory response with provenance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Invalid request parameters or missing required context
+        '500':
+          description: Internal processing error
+
+  /v1/analytics/pfz:
+    post:
+      summary: Compute Potential Fishing Zones (PFZ) GeoJSON
+      description: Ingests SST and Chlorophyll feeds to calculate thermal/chlorophyll fronts and outputs GeoJSON polygons with provenance metadata.
+      operationId: computePfzAnalytics
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PfzRequest'
+      responses:
+        '200':
+          description: GeoJSON FeatureCollection of PFZ polygons with provenance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PfzGeoJsonResponse'
+        '422':
+          description: Unprocessable entity or missing observation tiles
+        '503':
+          description: Fallback mode active — degraded precision
+
+components:
+  schemas:
+    ProvenanceRecord:
+      type: object
+      required:
+        - recommendation_id
+        - task_id
+        - created_at
+        - evidence
+        - confidence
+      properties:
+        recommendation_id:
+          type: string
+          format: uuid
+        task_id:
+          type: string
+        trace_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        evidence:
+          type: array
+          items:
+            type: object
+            properties:
+              dataset_id:
+                type: string
+              file_id:
+                type: string
+              acquisition_timestamp:
+                type: string
+                format: date-time
+              metric:
+                type: string
+              value:
+                type: number
+
+    ChatRequest:
+      type: object
+      required:
+        - user_id
+        - message
+      properties:
+        user_id:
+          type: string
+        session_id:
+          type: string
+        message:
+          type: string
+        coordinates:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+        vessel_profile:
+          type: object
+          properties:
+            type:
+              type: string
+            max_wind_kmh:
+              type: number
+
+    ChatResponse:
+      type: object
+      required:
+        - reply
+        - confidence
+        - provenance
+      properties:
+        reply:
+          type: string
+        confidence:
+          type: number
+        safety_status:
+          type: string
+          enum: [safe, cautious, danger, low_confidence]
+        provenance:
+          $ref: '#/components/schemas/ProvenanceRecord'
+
+    PfzRequest:
+      type: object
+      required:
+        - bbox
+        - target_date
+      properties:
+        bbox:
+          type: array
+          items:
+            type: number
+          minItems: 4
+          maxItems: 4
+          description: '[min_lon, min_lat, max_lon, max_lat]'
+        target_date:
+          type: string
+          format: date
+        min_chlorophyll_threshold:
+          type: number
+          default: 0.3
+
+    PfzGeoJsonResponse:
+      type: object
+      required:
+        - type
+        - features
+        - provenance
+      properties:
+        type:
+          type: string
+          enum: [FeatureCollection]
+        features:
+          type: array
+          items:
+            type: object
+        provenance:
+          $ref: '#/components/schemas/ProvenanceRecord'

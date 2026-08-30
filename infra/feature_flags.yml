@@ -1,0 +1,33 @@
+# Project ORCA Feature Flags Configuration
+# Safe-mode default state (all dynamic/high-risk experimental features default to false)
+
+version: "1.0"
+environment: "production-defaults"
+
+flags:
+  pfz_live_recomputation:
+    enabled: false
+    description: "Enable live computation of PFZ polygons from satellite feeds"
+    fallback_to_cached: true
+    safe_mode_default: false
+
+  mass_push_advisories:
+    enabled: false
+    description: "Enable mass automated safety notifications to coastal fishers"
+    requires_human_approval: true
+    safe_mode_default: false
+
+  llm_conversational_advisory:
+    enabled: false
+    description: "Enable generative AI response synthesis for vessel routing"
+    requires_provenance_validation: true
+    safe_mode_default: false
+
+  canary_traffic_percentage:
+    value: 5
+    description: "Percentage of traffic routed to canary releases"
+
+  strict_provenance_enforcement:
+    enabled: true
+    description: "Reject any recommendation lacking dataset provenance"
+    safe_mode_default: true

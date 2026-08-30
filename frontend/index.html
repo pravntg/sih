@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project ORCA — Marine Tactical Command Center</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="./styles/main.css">
+</head>
+<body>
+
+  <!-- Top Tactical HUD Header -->
+  <header class="tactical-header">
+    <div class="hud-brand">
+      <span class="hud-badge">ORCA HUD</span>
+      <h1 class="hud-title">Marine Tactical Command Center</h1>
+    </div>
+    
+    <div class="hud-center-telemetry">
+      <div class="hud-chip">
+        <span class="hud-chip-label">GPS:</span>
+        <span class="hud-chip-value" id="hud-gps">09°17'15"N 79°18'46"E</span>
+      </div>
+      <div class="hud-chip">
+        <span class="hud-chip-label">INGEST:</span>
+        <span class="hud-chip-value">Sentinel-3 SLSTR + MODIS Aqua</span>
+      </div>
+      <div class="hud-chip">
+        <span class="hud-chip-label">UTC:</span>
+        <span class="hud-chip-value" id="hud-clock">--:--:-- UTC</span>
+      </div>
+    </div>
+
+    <div class="hud-status-live">
+      <span class="live-beacon"></span>
+      <span id="hud-status-label">INCOIS Telemetry Active</span>
+    </div>
+  </header>
+
+  <!-- High-Density Oceanographic Telemetry Matrix Ribbon (6 Chips) -->
+  <section class="telemetry-matrix">
+    <div class="matrix-cell">
+      <span class="matrix-label">Mean SST</span>
+      <span class="matrix-value" id="val-sst">28.4 °C</span>
+      <span class="matrix-sub">S3 L2 Calibrated</span>
+    </div>
+    <div class="matrix-cell">
+      <span class="matrix-label">Thermal Gradient</span>
+      <span class="matrix-value" id="val-grad">1.40 °C/km</span>
+      <span class="matrix-sub">Front Strength: High</span>
+    </div>
+    <div class="matrix-cell">
+      <span class="matrix-label">Sig. Wave Height</span>
+      <span class="matrix-value" id="val-wave">1.20 m</span>
+      <span class="matrix-sub">Period: 6.4s (Safe)</span>
+    </div>
+    <div class="matrix-cell">
+      <span class="matrix-label">Wind Velocity</span>
+      <span class="matrix-value" id="val-wind">18.0 km/h</span>
+      <span class="matrix-sub">Direction: 045° NE</span>
+    </div>
+    <div class="matrix-cell">
+      <span class="matrix-label">Beaufort Scale</span>
+      <span class="matrix-value" id="val-beaufort">Force 3</span>
+      <span class="matrix-sub">Gentle Breeze</span>
+    </div>
+    <div class="matrix-cell">
+      <span class="matrix-label">Tidal Phase</span>
+      <span class="matrix-value" id="val-tide">+0.85 m</span>
+      <span class="matrix-sub">Flood Tide (Rising)</span>
+    </div>
+  </section>
+
+  <!-- Main Tactical Workspace -->
+  <main class="workspace">
+    <!-- Left Tactical Flight & Layer Sidebar -->
+    <aside class="tactical-sidebar">
+      <div class="tactical-panel">
+        <div class="panel-header">
+          <span>Active Coastal Harbor</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="harbor-select">Select Harbor / Base</label>
+          <select id="harbor-select" class="form-select">
+            <option value="rameswaram" selected>Rameswaram Base [09°17'N 79°18'E]</option>
+            <option value="kochi">Kochi / Cochin [09°58'N 76°16'E]</option>
+            <option value="visakhapatnam">Visakhapatnam (Vizag) [17°41'N 83°17'E]</option>
+            <option value="tuticorin">Tuticorin (Thoothukudi) [08°45'N 78°09'E]</option>
+            <option value="chennai">Chennai Kasimedu [13°05'N 80°17'E]</option>
+            <option value="mangalore">Old Port Mangalore [12°51'N 74°50'E]</option>
+            <option value="mumbai">Mumbai Sassoon Docks [18°56'N 72°50'E]</option>
+            <option value="goa">Goa Mormugao [15°24'N 73°48'E]</option>
+            <option value="paradip">Paradip Port [20°19'N 86°37'E]</option>
+            <option value="veraval">Veraval Port Gujarat [20°54'N 70°22'E]</option>
+            <option value="port blair">Port Blair (Andaman) [11°37'N 92°43'E]</option>
+            <option value="custom">Custom Point (Click Map)</option>
+          </select>
+        </div>
+        <div style="font-size: 10px; color: var(--color-seafoam); margin-top: 4px;">
+          Tip: Click anywhere on the map to drop a new custom waypoint pin!
+        </div>
+      </div>
+
+      <div class="tactical-panel">
+        <div class="panel-header">
+          <span>Vessel Risk Matrix</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="vessel-select">Vessel Profile</label>
+          <select id="vessel-select" class="form-select">
+            <option value="motorized_skiff" selected>Motorized Skiff (OBM)</option>
+            <option value="trawler">Mechanized Trawler</option>
+            <option value="artisanal_catamaran">Artisanal Catamaran</option>
+            <option value="deep_sea_liner">Deep Sea Longliner</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Wind Tolerance Limit (km/h)</label>
+          <input type="number" id="vessel-max-wind" class="form-input" value="25" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Wave Tolerance Limit (m)</label>
+          <input type="number" id="vessel-max-wave" class="form-input" value="1.5" step="0.1" />
+        </div>
+      </div>
+
+      <div class="tactical-panel">
+        <div class="panel-header">
+          <span>Tactical Map Layers</span>
+        </div>
+        <div class="layer-toggle-grid">
+          <label class="layer-toggle-item">
+            <span>PFZ Seafoam Front Polygons</span>
+            <input type="checkbox" id="chk-pfz" checked />
+          </label>
+          <label class="layer-toggle-item">
+            <span>SST Isotherm Contours</span>
+            <input type="checkbox" id="chk-sst" checked />
+          </label>
+          <label class="layer-toggle-item">
+            <span>Chlorophyll-a Bloom Plumes</span>
+            <input type="checkbox" id="chk-chl" checked />
+          </label>
+          <label class="layer-toggle-item">
+            <span>Bathymetric Depth Grid (30-100m)</span>
+            <input type="checkbox" id="chk-depth" checked />
+          </label>
+        </div>
+        <div class="form-group" style="margin-top: 10px;">
+          <label class="form-label">Thermal Front Sensitivity</label>
+          <select id="gradient-sens" class="form-select">
+            <option value="0.5">High Sensitivity (0.5 °C/km)</option>
+            <option value="0.8" selected>Standard Operational (0.8 °C/km)</option>
+            <option value="1.2">Sharp Ocean Fronts (1.2 °C/km)</option>
+          </select>
+        </div>
+        <button id="btn-refresh-pfz" class="btn-action-primary">Recompute Local PFZ</button>
+        <button id="btn-show-provenance" class="btn-action-outline">Provenance Tree Inspector</button>
+      </div>
+
+      <div class="tactical-panel">
+        <div class="panel-header">
+          <span>Pelagic Target Species</span>
+        </div>
+        <div id="sidebar-species-list" style="font-size: 11px; line-height: 1.6; color: var(--color-sandy-shore);">
+          • <strong>Yellowfin Tuna</strong> (Thermal Front Boundary)<br>
+          • <strong>Indian Mackerel</strong> (Chlorophyll Co-location)<br>
+          • <strong>Skipjack & Sardines</strong> (Coastal Upwelling)
+        </div>
+      </div>
+    </aside>
+
+    <!-- Center Geospatial Canvas Map Viewport -->
+    <section class="map-viewport">
+      <div id="map"></div>
+
+      <!-- Floating Tactical Telemetry HUD Card -->
+      <div class="hud-map-card">
+        <div class="hud-map-title">Tactical Zone Telemetry</div>
+        <div class="hud-stat-row">
+          <span class="hud-stat-label">Active Sector:</span>
+          <span class="hud-stat-val" id="hud-active-harbor">Rameswaram Base</span>
+        </div>
+        <div class="hud-stat-row">
+          <span class="hud-stat-label">Active Zone:</span>
+          <span class="hud-stat-val" id="hud-zone-id">PFZ-MAN01</span>
+        </div>
+        <div class="hud-stat-row">
+          <span class="hud-stat-label">Thermal Gradient:</span>
+          <span class="hud-stat-val" id="hud-gradient">1.40 °C/km</span>
+        </div>
+        <div class="hud-stat-row">
+          <span class="hud-stat-label">Chlorophyll-a:</span>
+          <span class="hud-stat-val" id="hud-chl">0.52 mg/m³</span>
+        </div>
+        <div class="hud-stat-row">
+          <span class="hud-stat-label">Bathymetry Depth:</span>
+          <span class="hud-stat-val" id="hud-depth">35 - 75 m</span>
+        </div>
+        <div class="hud-stat-row">
+          <span class="hud-stat-label">Bearing from Base:</span>
+          <span class="hud-stat-val" id="hud-bearing-str">142° SE (14.2 nm)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Autonomous Marine Reasoning & AI Copilot Panel -->
+    <aside class="copilot-panel">
+      <div class="copilot-header">
+        <span class="copilot-title">ORCA Marine AI Copilot</span>
+        <span style="font-size: 10px; background-color: var(--color-seafoam); color: var(--color-deep-sea); padding: 2px 6px; border-radius: 3px; font-weight: 800;">AUTONOMOUS AGENT</span>
+      </div>
+
+      <div class="copilot-messages" id="chat-messages">
+        <!-- Filled dynamically -->
+      </div>
+
+      <div class="copilot-input-bar">
+        <input type="text" id="chat-input" class="copilot-input" placeholder="Query marine safety, PFZ bearings, any harbor..." />
+        <button id="chat-send" class="copilot-send-btn">Send</button>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Provenance Modal -->
+  <div class="modal-overlay" id="provenance-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Authoritative Provenance & Evidence Tree</h3>
+        <button class="modal-close" id="modal-close-btn">&times;</button>
+      </div>
+      <div id="provenance-details" style="font-size: 12px; line-height: 1.6;">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="./src/app.js"></script>
+</body>
+</html>

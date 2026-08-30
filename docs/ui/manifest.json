@@ -1,0 +1,17 @@
+{
+  "stitch_project_id": "15311932679871051742",
+  "stitch_screen_id": "21a4ddc3cb4f4ded8fdc42cbcdf85355",
+  "design_system": "Marine Intelligence System (assets/fd814b84a29740d39d043b0fa90c508e)",
+  "source_topic": "orca.ui.designs",
+  "authoritative_status": "synced",
+  "last_synced_at": "2026-08-30T11:15:00Z",
+  "screens": {
+    "dashboard": {
+      "title": "Project ORCA: Marine Intelligence Dashboard",
+      "version": "v1.0-stitch",
+      "artifact_uri": "stitch://projects/15311932679871051742/screens/21a4ddc3cb4f4ded8fdc42cbcdf85355",
+      "checksum_sha256": "82fdb04a6e5843709534520528cf7ab3",
+      "status": "APPROVED"
+    }
+  }
+}

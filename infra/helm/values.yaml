@@ -1,0 +1,31 @@
+# Default values for orca-platform
+replicaCount: 2
+
+image:
+  repository: orca/backend
+  pullPolicy: IfNotPresent
+  tag: "v0.1.0"
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: api.orca.internal
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false

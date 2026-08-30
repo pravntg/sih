@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  orca-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: orca-backend-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://orca_user:orca_password@orca-postgres:5432/orca_db
+      - REDIS_URL=redis://orca-redis:6379/0
+      - S3_ENDPOINT=http://orca-minio:9000
+      - ENVIRONMENT=development
+    volumes:
+      - ./src:/app/src
+      - ./api:/app/api
+      - ./tests:/app/tests
+    depends_on:
+      - orca-postgres
+      - orca-redis
+
+  orca-postgres:
+    image: postgis/postgis:15-3.3
+    container_name: orca-postgres-dev
+    environment:
+      POSTGRES_DB: orca_db
+      POSTGRES_USER: orca_user
+      POSTGRES_PASSWORD: orca_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - orca_pgdata:/var/lib/postgresql/data
+
+  orca-redis:
+    image: redis:7-alpine
+    container_name: orca-redis-dev
+    ports:
+      - "6379:6379"
+
+  orca-minio:
+    image: minio/minio:latest
+    container_name: orca-minio-dev
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - orca_miniodata:/data
+
+volumes:
+  orca_pgdata:
+  orca_miniodata:

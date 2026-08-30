@@ -1,0 +1,7 @@
+{
+  "authoritative_source": "../../docs/ui/manifest.json",
+  "palette_source": "../../docs/ui/palette.json",
+  "tokens_source": "../../docs/ui/tokens.json",
+  "stitch_topic": "orca.ui.designs",
+  "synced_status": "synced"
+}

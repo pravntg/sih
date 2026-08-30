@@ -1,0 +1,68 @@
+name: Project ORCA CI & Gating Pipeline
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop, main ]
+
+jobs:
+  validate-provenance-and-palette:
+    name: Provenance & Palette Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify Strict Palette & UI Rules
+        run: node frontend/scripts/verify-palette.js
+
+      - name: Verify Authoritative Docs Presence
+        run: |
+          test -f docs/agents.md || (echo "Error: docs/agents.md missing!" && exit 1)
+          test -f docs/ui/palette.json || (echo "Error: docs/ui/palette.json missing!" && exit 1)
+          test -f docs/provenance_guidelines.md || (echo "Error: docs/provenance_guidelines.md missing!" && exit 1)
+
+  backend-test-and-coverage:
+    name: Backend Unit Tests & Coverage Gating
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run Pytest with Coverage
+        run: |
+          cd backend
+          pytest tests/ -v --cov=src --cov-fail-under=70
+
+  security-scan:
+    name: SCA Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Security Audit
+        run: |
+          pip install pip-audit
+          pip-audit -r backend/requirements.txt || true

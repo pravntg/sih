@@ -1,0 +1,48 @@
+{
+  "project": "Project ORCA",
+  "version": "1.0.0",
+  "palette_name": "Marine Intelligence Strict Palette",
+  "rules": {
+    "no_gradients": true,
+    "solid_fills_only": true,
+    "max_border_radius_px": 8,
+    "prohibited": ["gradients", "neon_glow", "ai_illustrations", "programmatic_tints"]
+  },
+  "colors": {
+    "deep_sea": {
+      "hex": "#0D2B45",
+      "role": "primary_dark",
+      "usage": "Headers, primary dark cards, dark buttons, high-contrast outlines"
+    },
+    "ocean_mist": {
+      "hex": "#5A7D9A",
+      "role": "primary_mid",
+      "usage": "Secondary buttons, section headers, active highlights"
+    },
+    "seafoam": {
+      "hex": "#8DBFB7",
+      "role": "accent_positive",
+      "usage": "Positive status, PFZ polygon overlays, success indicators, key action accents"
+    },
+    "sandy_shore": {
+      "hex": "#DCC7AA",
+      "role": "neutral_panel",
+      "usage": "Neutral container borders, sidebars, panel backgrounds, callouts"
+    },
+    "salt_air": {
+      "hex": "#F4F6F6",
+      "role": "surface_background",
+      "usage": "Primary app background, surface cards, clean light containers"
+    },
+    "text_default": {
+      "hex": "#0B1220",
+      "role": "body_text",
+      "usage": "Standard typography on light surfaces (WCAG AA compliant)"
+    },
+    "text_inverse": {
+      "hex": "#FFFFFF",
+      "role": "inverse_text",
+      "usage": "Typography on deep_sea dark surfaces"
+    }
+  }
+}
