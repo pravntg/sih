@@ -2,18 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Project ORCA — Marine Tactical Command Center</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Project ORCA — Global Marine Tactical Command Center</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <link rel="stylesheet" href="./styles/main.css">
 </head>
-<body>
+<body class="tab-map">
 
   <!-- Top Tactical HUD Header -->
   <header class="tactical-header">
     <div class="hud-brand">
       <span class="hud-badge">ORCA HUD</span>
-      <h1 class="hud-title">Marine Tactical Command Center</h1>
+      <h1 class="hud-title">Global Marine Command Center</h1>
     </div>
     
     <div class="hud-center-telemetry">
@@ -33,7 +33,7 @@
 
     <div class="hud-status-live">
       <span class="live-beacon"></span>
-      <span id="hud-status-label">INCOIS Telemetry Active</span>
+      <span id="hud-status-label">Global Telemetry Active</span>
     </div>
   </header>
 
@@ -42,7 +42,7 @@
     <div class="matrix-cell">
       <span class="matrix-label">Mean SST</span>
       <span class="matrix-value" id="val-sst">28.4 °C</span>
-      <span class="matrix-sub">S3 L2 Calibrated</span>
+      <span class="matrix-sub">S3 L2 Global Calibrated</span>
     </div>
     <div class="matrix-cell">
       <span class="matrix-label">Thermal Gradient</span>
@@ -71,33 +71,95 @@
     </div>
   </section>
 
+  <!-- Mobile Viewport Navigation Tab Bar (Switches views on mobile & tablet) -->
+  <nav class="mobile-nav-tabs">
+    <button class="mobile-tab-btn active" id="tab-btn-map" onclick="switchMobileTab('tab-map')">📍 Ocean Map</button>
+    <button class="mobile-tab-btn" id="tab-btn-controls" onclick="switchMobileTab('tab-controls')">⚙️ Ports & Vessel</button>
+    <button class="mobile-tab-btn" id="tab-btn-copilot" onclick="switchMobileTab('tab-copilot')">🤖 AI Copilot</button>
+  </nav>
+
   <!-- Main Tactical Workspace -->
   <main class="workspace">
     <!-- Left Tactical Flight & Layer Sidebar -->
     <aside class="tactical-sidebar">
       <div class="tactical-panel">
         <div class="panel-header">
-          <span>Active Coastal Harbor</span>
+          <span>Global Coastal Ports (50+ Hubs)</span>
         </div>
         <div class="form-group">
-          <label class="form-label" for="harbor-select">Select Harbor / Base</label>
+          <label class="form-label" for="harbor-select">Select Worldwide Port / Base</label>
           <select id="harbor-select" class="form-select">
-            <option value="rameswaram" selected>Rameswaram Base [09°17'N 79°18'E]</option>
-            <option value="kochi">Kochi / Cochin [09°58'N 76°16'E]</option>
-            <option value="visakhapatnam">Visakhapatnam (Vizag) [17°41'N 83°17'E]</option>
-            <option value="tuticorin">Tuticorin (Thoothukudi) [08°45'N 78°09'E]</option>
-            <option value="chennai">Chennai Kasimedu [13°05'N 80°17'E]</option>
-            <option value="mangalore">Old Port Mangalore [12°51'N 74°50'E]</option>
-            <option value="mumbai">Mumbai Sassoon Docks [18°56'N 72°50'E]</option>
-            <option value="goa">Goa Mormugao [15°24'N 73°48'E]</option>
-            <option value="paradip">Paradip Port [20°19'N 86°37'E]</option>
-            <option value="veraval">Veraval Port Gujarat [20°54'N 70°22'E]</option>
-            <option value="port blair">Port Blair (Andaman) [11°37'N 92°43'E]</option>
-            <option value="custom">Custom Point (Click Map)</option>
+            <optgroup label="📍 Custom Location">
+              <option value="custom">📍 Custom Waypoint (Click/Drag Map)</option>
+            </optgroup>
+            <optgroup label="🇮🇳 India & South Asia (Indian Ocean / Arabian Sea / Bay of Bengal)">
+              <option value="rameswaram" selected>Rameswaram Base [09°17'N 79°18'E]</option>
+              <option value="kochi">Kochi / Cochin Fishing Harbor [09°58'N 76°16'E]</option>
+              <option value="visakhapatnam">Visakhapatnam (Vizag) [17°41'N 83°17'E]</option>
+              <option value="tuticorin">Tuticorin (Thoothukudi) [08°45'N 78°09'E]</option>
+              <option value="chennai">Chennai Kasimedu [13°05'N 80°17'E]</option>
+              <option value="mumbai">Mumbai Sassoon Docks [18°56'N 72°50'E]</option>
+              <option value="mangalore">Old Port Mangalore [12°51'N 74°50'E]</option>
+              <option value="goa">Goa Mormugao [15°24'N 73°48'E]</option>
+              <option value="paradip">Paradip Port (Odisha) [20°19'N 86°37'E]</option>
+              <option value="veraval">Veraval Port Gujarat [20°54'N 70°22'E]</option>
+              <option value="port blair">Port Blair (Andaman) [11°37'N 92°43'E]</option>
+              <option value="colombo">Colombo (Sri Lanka) [06°57'N 79°50'E]</option>
+              <option value="karachi">Karachi Fish Harbour (Pakistan) [24°50'N 66°58'E]</option>
+              <option value="chittagong">Chattogram (Bangladesh) [22°19'N 91°48'E]</option>
+            </optgroup>
+            <optgroup label="🌏 East Asia & Southeast Asia (Pacific & Straits)">
+              <option value="tokyo">Tokyo Port (Japan) [35°39'N 139°50'E]</option>
+              <option value="singapore">Port of Singapore [01°17'N 103°51'E]</option>
+              <option value="shanghai">Shanghai Port (China) [31°13'N 121°28'E]</option>
+              <option value="busan">Busan Port (South Korea) [35°06'N 129°02'E]</option>
+              <option value="jakarta">Jakarta Tanjung Priok (Indonesia) [06°06'S 106°52'E]</option>
+              <option value="kaohsiung">Kaohsiung (Taiwan) [22°37'N 120°17'E]</option>
+            </optgroup>
+            <optgroup label="🌎 Americas (Pacific, Atlantic & Caribbean)">
+              <option value="san francisco">San Francisco Fisherman's Wharf (USA) [37°48'N 122°25'W]</option>
+              <option value="seattle">Seattle Port (USA) [47°36'N 122°20'W]</option>
+              <option value="new york">New York & New Jersey (USA) [40°41'N 74°02'W]</option>
+              <option value="miami">PortMiami (USA) [25°46'N 80°10'W]</option>
+              <option value="vancouver">Vancouver Port (Canada) [49°17'N 123°07'W]</option>
+              <option value="halifax">Halifax Port (Canada) [44°38'N 63°34'W]</option>
+              <option value="valparaiso">Valparaiso (Chile) [33°02'S 71°36'W]</option>
+              <option value="callao">Callao / Lima (Peru) [12°03'S 77°08'W]</option>
+              <option value="santos">Santos Port (Brazil) [23°57'S 46°18'W]</option>
+              <option value="buenos aires">Buenos Aires (Argentina) [34°35'S 58°22'W]</option>
+              <option value="ensenada">Ensenada (Mexico) [31°51'N 116°36'W]</option>
+            </optgroup>
+            <optgroup label="🌍 Europe & Mediterranean (North Sea, Atlantic, Baltic)">
+              <option value="rotterdam">Rotterdam Port (Netherlands) [51°55'N 04°28'E]</option>
+              <option value="marseille">Marseille Port (France) [43°17'N 05°22'E]</option>
+              <option value="genoa">Genoa Port (Italy) [44°24'N 08°56'E]</option>
+              <option value="piraeus">Piraeus / Athens (Greece) [37°56'N 23°38'E]</option>
+              <option value="bergen">Bergen Port (Norway) [60°23'N 05°19'E]</option>
+              <option value="hamburg">Hamburg Port (Germany) [53°32'N 09°58'E]</option>
+              <option value="barcelona">Barcelona (Spain) [41°21'N 02°10'E]</option>
+              <option value="southampton">Southampton (UK) [50°54'N 01°24'W]</option>
+              <option value="lisbon">Lisbon (Portugal) [38°43'N 09°08'W]</option>
+              <option value="gdansk">Gdansk (Poland) [54°22'N 18°38'E]</option>
+            </optgroup>
+            <optgroup label="🌍 Middle East & Africa">
+              <option value="dubai">Dubai Port Rashid (UAE) [25°16'N 55°18'E]</option>
+              <option value="cape town">Cape Town (South Africa) [33°55'S 18°25'E]</option>
+              <option value="alexandria">Alexandria (Egypt) [31°12'N 29°55'E]</option>
+              <option value="mombasa">Mombasa Port (Kenya) [04°02'S 39°40'E]</option>
+              <option value="casablanca">Casablanca (Morocco) [33°36'N 07°37'W]</option>
+              <option value="lagos">Lagos Port (Nigeria) [06°27'N 03°23'E]</option>
+              <option value="durban">Durban (South Africa) [29°51'S 31°01'E]</option>
+            </optgroup>
+            <optgroup label="🌏 Oceania & Pacific">
+              <option value="sydney">Sydney Harbour (Australia) [33°52'S 151°12'E]</option>
+              <option value="auckland">Auckland Port (New Zealand) [36°50'S 174°45'E]</option>
+              <option value="honolulu">Honolulu Harbor (Hawaii, USA) [21°18'N 157°51'W]</option>
+              <option value="suva">Suva Port (Fiji) [18°08'S 178°26'E]</option>
+            </optgroup>
           </select>
         </div>
         <div style="font-size: 10px; color: var(--color-seafoam); margin-top: 4px;">
-          Tip: Click anywhere on the map to drop a new custom waypoint pin!
+          Tip: Click or tap anywhere across the globe to drop an interactive waypoint!
         </div>
       </div>
 
@@ -160,7 +222,7 @@
 
       <div class="tactical-panel">
         <div class="panel-header">
-          <span>Pelagic Target Species</span>
+          <span>Regional Target Species</span>
         </div>
         <div id="sidebar-species-list" style="font-size: 11px; line-height: 1.6; color: var(--color-sandy-shore);">
           • <strong>Yellowfin Tuna</strong> (Thermal Front Boundary)<br>
@@ -216,7 +278,7 @@
       </div>
 
       <div class="copilot-input-bar">
-        <input type="text" id="chat-input" class="copilot-input" placeholder="Query marine safety, PFZ bearings, any harbor..." />
+        <input type="text" id="chat-input" class="copilot-input" placeholder="Query marine safety, bearings, or any port..." />
         <button id="chat-send" class="copilot-send-btn">Send</button>
       </div>
     </aside>

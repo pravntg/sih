@@ -1,8 +1,8 @@
 /* 
-  Project ORCA — Tactical Command Center & Marine Intelligence System
-  Synced with Stitch MCP Project: 15311932679871051742 (Screen: a160397092b4435a998526a916bf30d1)
+  Project ORCA — Tactical Command Center & Marine Intelligence System (v2.0 Global & Mobile)
+  Synced with Stitch MCP Project: 15311932679871051742 (Screens: a160397092b4435a998526a916bf30d1 & 836bb221152f489b861f537b5ccab6d5)
   Strict Palette: #0D2B45, #5A7D9A, #8DBFB7, #DCC7AA, #F4F6F6, #0B1220, #FFFFFF
-  No Gradients | Solid Fills Only | Max Radius 8px
+  No Gradients | Solid Fills Only | Max Radius 8px | Full Mobile Responsiveness
 */
 @import './variables.css';
 
@@ -11,6 +11,7 @@
   margin: 0;
   padding: 0;
   font-family: var(--font-family);
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -32,6 +33,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .hud-brand {
@@ -61,7 +63,7 @@ body {
 .hud-center-telemetry {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   font-size: 12px;
 }
 
@@ -120,7 +122,8 @@ body {
   padding: 8px 20px;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .matrix-cell {
@@ -154,6 +157,43 @@ body {
 }
 
 /* ==========================================================================
+   Mobile Tactical Navigation Tab Bar (Hidden on Desktop)
+   ========================================================================== */
+.mobile-nav-tabs {
+  display: none;
+  background-color: #0B1220;
+  border-bottom: 1px solid var(--color-sandy-shore);
+  padding: 6px 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mobile-tab-btn {
+  background-color: var(--color-deep-sea);
+  color: var(--color-sandy-shore);
+  border: 1px solid var(--color-ocean-mist);
+  border-radius: 4px;
+  padding: 8px 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.mobile-tab-btn.active {
+  background-color: var(--color-ocean-mist);
+  color: #FFFFFF;
+  border-color: var(--color-seafoam);
+}
+
+/* ==========================================================================
    Main Command Layout
    ========================================================================== */
 .workspace {
@@ -161,6 +201,7 @@ body {
   flex: 1;
   overflow: hidden;
   background-color: var(--color-deep-sea);
+  position: relative;
 }
 
 /* Left Tactical Control Sidebar */
@@ -173,6 +214,7 @@ body {
   padding: 14px;
   gap: 14px;
   overflow-y: auto;
+  flex-shrink: 0;
 }
 
 .tactical-panel {
@@ -225,6 +267,17 @@ body {
 .form-select:focus, .form-input:focus {
   outline: none;
   border-color: var(--color-seafoam);
+}
+
+.form-select optgroup {
+  background-color: #0B1220;
+  color: var(--color-sandy-shore);
+  font-weight: 700;
+}
+
+.form-select option {
+  background-color: #0D2B45;
+  color: #FFFFFF;
 }
 
 /* Layer Checklist Toggle Grid */
@@ -304,6 +357,7 @@ body {
   flex: 1;
   position: relative;
   background-color: #06111C;
+  min-height: 250px;
 }
 
 #map {
@@ -322,6 +376,7 @@ body {
   border-radius: 6px;
   padding: 12px 16px;
   width: 280px;
+  max-width: calc(100% - 28px);
 }
 
 .hud-map-title {
@@ -375,6 +430,7 @@ body {
   border-left: 1px solid var(--color-sandy-shore);
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
 }
 
 .copilot-header {
@@ -603,4 +659,124 @@ body {
   font-weight: 700;
   color: var(--color-sandy-shore);
   cursor: pointer;
+}
+
+/* ==========================================================================
+   Mobile & Tablet Responsive Breakpoints
+   ========================================================================== */
+@media (max-width: 1024px) {
+  body {
+    height: 100vh;
+  }
+
+  .mobile-nav-tabs {
+    display: grid;
+  }
+
+  .tactical-header {
+    padding: 8px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .hud-brand {
+    gap: 8px;
+  }
+
+  .hud-title {
+    font-size: 14px;
+  }
+
+  .hud-center-telemetry {
+    gap: 8px;
+  }
+
+  .telemetry-matrix {
+    grid-template-columns: repeat(3, 1fr);
+    padding: 6px 12px;
+    gap: 8px;
+  }
+
+  .workspace {
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Responsive View Switching on Mobile */
+  .tactical-sidebar, .copilot-panel, .map-viewport {
+    width: 100%;
+    border: none;
+  }
+
+  .tactical-sidebar {
+    display: none;
+    height: 100%;
+  }
+
+  .copilot-panel {
+    display: none;
+    height: 100%;
+  }
+
+  .map-viewport {
+    display: flex;
+    flex: 1;
+    height: 100%;
+  }
+
+  /* Active Tab Controls on Mobile */
+  body.tab-map .map-viewport {
+    display: flex !important;
+  }
+  body.tab-map .tactical-sidebar,
+  body.tab-map .copilot-panel {
+    display: none !important;
+  }
+
+  body.tab-controls .tactical-sidebar {
+    display: flex !important;
+  }
+  body.tab-controls .map-viewport,
+  body.tab-controls .copilot-panel {
+    display: none !important;
+  }
+
+  body.tab-copilot .copilot-panel {
+    display: flex !important;
+  }
+  body.tab-copilot .map-viewport,
+  body.tab-copilot .tactical-sidebar {
+    display: none !important;
+  }
+
+  .hud-map-card {
+    top: 8px;
+    right: 8px;
+    padding: 8px 12px;
+    width: 220px;
+  }
+
+  .modal-content {
+    width: 92%;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hud-title {
+    display: none;
+  }
+
+  .hud-center-telemetry .hud-chip:nth-child(2) {
+    display: none;
+  }
+
+  .telemetry-matrix {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hud-map-card {
+    display: none;
+  }
 }

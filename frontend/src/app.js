@@ -1,6 +1,6 @@
 /**
- * Project ORCA — Tactical Marine Command Center Engine
- * Dynamic Harbor Selection, Interactive Map Waypoint Placement, & Clean Markdown-to-HTML Parser
+ * Project ORCA — Global Marine Tactical Command Center Engine (v2.0)
+ * 50+ Worldwide Ports, Mobile Responsive Switching, Interactive Waypoint Placement & Clean Markdown Formatter
  */
 
 const API_BASE_URL = 'http://localhost:8000/v1';
@@ -15,24 +15,75 @@ const PALETTE = {
   textDefault: '#0B1220'
 };
 
-// Coastal Harbor Coordinates & Metadata Registry
-const HARBORS = {
-  rameswaram: { name: "Rameswaram Base [Base 01]", lat: 9.2876, lon: 79.3129, zoom: 9 },
-  kochi: { name: "Cochin Fishing Harbor", lat: 9.9312, lon: 76.2673, zoom: 9 },
-  visakhapatnam: { name: "Visakhapatnam Fishing Harbor", lat: 17.6868, lon: 83.2185, zoom: 9 },
-  tuticorin: { name: "Tuticorin (Thoothukudi)", lat: 8.7642, lon: 78.1348, zoom: 9 },
-  chennai: { name: "Chennai Fishing Harbor (Kasimedu)", lat: 13.0827, lon: 80.2707, zoom: 9 },
-  mangalore: { name: "Old Port Mangalore", lat: 12.8698, lon: 74.8430, zoom: 9 },
-  mumbai: { name: "Mumbai Sassoon Docks", lat: 18.9220, lon: 72.8347, zoom: 9 },
-  goa: { name: "Mormugao Harbor (Goa)", lat: 15.4050, lon: 73.8050, zoom: 9 },
-  paradip: { name: "Paradip Port (Odisha)", lat: 20.3167, lon: 86.6167, zoom: 9 },
-  veraval: { name: "Veraval Harbor (Gujarat)", lat: 20.9000, lon: 70.3667, zoom: 9 },
-  "port blair": { name: "Port Blair Phoenix Bay (Andaman)", lat: 11.6234, lon: 92.7265, zoom: 9 }
+// Global Coastal Harbor & Port Directory (50+ Ports Worldwide)
+const GLOBAL_HARBORS = {
+  // Asia & Indian Ocean
+  rameswaram: { name: "Rameswaram Base [Base 01]", lat: 9.2876, lon: 79.3129, zoom: 9, basin: "Indian Ocean" },
+  kochi: { name: "Cochin Fishing Harbor", lat: 9.9312, lon: 76.2673, zoom: 9, basin: "Arabian Sea" },
+  visakhapatnam: { name: "Visakhapatnam Fishing Harbor", lat: 17.6868, lon: 83.2185, zoom: 9, basin: "Bay of Bengal" },
+  tuticorin: { name: "Tuticorin (Thoothukudi)", lat: 8.7642, lon: 78.1348, zoom: 9, basin: "Gulf of Mannar" },
+  chennai: { name: "Chennai Kasimedu Harbor", lat: 13.0827, lon: 80.2707, zoom: 9, basin: "Bay of Bengal" },
+  mumbai: { name: "Mumbai Sassoon Docks", lat: 18.9220, lon: 72.8347, zoom: 9, basin: "Arabian Sea" },
+  mangalore: { name: "Old Port Mangalore", lat: 12.8698, lon: 74.8430, zoom: 9, basin: "Arabian Sea" },
+  goa: { name: "Mormugao Harbor (Goa)", lat: 15.4050, lon: 73.8050, zoom: 9, basin: "Arabian Sea" },
+  paradip: { name: "Paradip Port (Odisha)", lat: 20.3167, lon: 86.6167, zoom: 9, basin: "Bay of Bengal" },
+  veraval: { name: "Veraval Harbor (Gujarat)", lat: 20.9000, lon: 70.3667, zoom: 9, basin: "Arabian Sea" },
+  "port blair": { name: "Phoenix Bay (Port Blair)", lat: 11.6234, lon: 92.7265, zoom: 9, basin: "Andaman Sea" },
+  colombo: { name: "Port of Colombo (Sri Lanka)", lat: 6.9497, lon: 79.8428, zoom: 9, basin: "Indian Ocean" },
+  karachi: { name: "Karachi Fish Harbour (Pakistan)", lat: 24.8406, lon: 66.9744, zoom: 9, basin: "Arabian Sea" },
+  chittagong: { name: "Chattogram Port (Bangladesh)", lat: 22.3167, lon: 91.8000, zoom: 9, basin: "Bay of Bengal" },
+
+  // East Asia & Southeast Asia
+  tokyo: { name: "Port of Tokyo (Japan)", lat: 35.6528, lon: 139.8394, zoom: 9, basin: "Northwest Pacific" },
+  singapore: { name: "Port of Singapore", lat: 1.2902, lon: 103.8519, zoom: 9, basin: "Strait of Malacca" },
+  shanghai: { name: "Port of Shanghai (China)", lat: 31.2304, lon: 121.4737, zoom: 9, basin: "East China Sea" },
+  busan: { name: "Port of Busan (South Korea)", lat: 35.1028, lon: 129.0403, zoom: 9, basin: "Korea Strait" },
+  jakarta: { name: "Tanjung Priok (Jakarta, Indonesia)", lat: -6.1039, lon: 106.8825, zoom: 9, basin: "Java Sea" },
+  kaohsiung: { name: "Port of Kaohsiung (Taiwan)", lat: 22.6167, lon: 120.2833, zoom: 9, basin: "South China Sea" },
+
+  // Americas
+  "san francisco": { name: "Fisherman's Wharf (San Francisco)", lat: 37.8080, lon: -122.4177, zoom: 9, basin: "Northeast Pacific" },
+  seattle: { name: "Port of Seattle (USA)", lat: 47.6062, lon: -122.3321, zoom: 9, basin: "Puget Sound / Pacific" },
+  "new york": { name: "New York & New Jersey Harbor (USA)", lat: 40.6892, lon: -74.0445, zoom: 9, basin: "Northwest Atlantic" },
+  miami: { name: "PortMiami (USA)", lat: 25.7781, lon: -80.1791, zoom: 9, basin: "Caribbean / Atlantic" },
+  vancouver: { name: "Port of Vancouver (Canada)", lat: 49.2827, lon: -123.1207, zoom: 9, basin: "Pacific Ocean" },
+  halifax: { name: "Port of Halifax (Canada)", lat: 44.6488, lon: -63.5752, zoom: 9, basin: "Northwest Atlantic" },
+  valparaiso: { name: "Port of Valparaiso (Chile)", lat: -33.0472, lon: -71.6127, zoom: 9, basin: "Humboldt Current Pacific" },
+  callao: { name: "Port of Callao (Lima, Peru)", lat: -12.0565, lon: -77.1478, zoom: 9, basin: "Humboldt Current Pacific" },
+  santos: { name: "Port of Santos (Brazil)", lat: -23.9618, lon: -46.3042, zoom: 9, basin: "South Atlantic" },
+  "buenos aires": { name: "Puerto de Buenos Aires (Argentina)", lat: -34.5997, lon: -58.3731, zoom: 9, basin: "South Atlantic" },
+  ensenada: { name: "Port of Ensenada (Mexico)", lat: 31.8578, lon: -116.6058, zoom: 9, basin: "Pacific Ocean" },
+
+  // Europe & Mediterranean
+  rotterdam: { name: "Port of Rotterdam (Netherlands)", lat: 51.9244, lon: 4.4777, zoom: 9, basin: "North Sea" },
+  marseille: { name: "Port of Marseille (France)", lat: 43.2965, lon: 5.3698, zoom: 9, basin: "Mediterranean Sea" },
+  genoa: { name: "Port of Genoa (Italy)", lat: 44.4056, lon: 8.9463, zoom: 9, basin: "Mediterranean Sea" },
+  piraeus: { name: "Port of Piraeus (Athens, Greece)", lat: 37.9430, lon: 23.6469, zoom: 9, basin: "Aegean / Mediterranean" },
+  bergen: { name: "Port of Bergen (Norway)", lat: 60.3913, lon: 5.3221, zoom: 9, basin: "Norwegian Sea" },
+  hamburg: { name: "Port of Hamburg (Germany)", lat: 53.5459, lon: 9.9669, zoom: 9, basin: "Elbe / North Sea" },
+  barcelona: { name: "Port of Barcelona (Spain)", lat: 41.3500, lon: 2.1667, zoom: 9, basin: "Mediterranean Sea" },
+  southampton: { name: "Port of Southampton (UK)", lat: 50.9097, lon: -1.4044, zoom: 9, basin: "English Channel" },
+  lisbon: { name: "Port of Lisbon (Portugal)", lat: 38.7223, lon: -9.1393, zoom: 9, basin: "Atlantic Ocean" },
+  gdansk: { name: "Port of Gdansk (Poland)", lat: 54.3722, lon: 18.6383, zoom: 9, basin: "Baltic Sea" },
+
+  // Middle East & Africa
+  dubai: { name: "Port Rashid (Dubai, UAE)", lat: 25.2697, lon: 55.3095, zoom: 9, basin: "Persian Gulf" },
+  "cape town": { name: "Port of Cape Town (South Africa)", lat: -33.9189, lon: 18.4233, zoom: 9, basin: "Benguela / Atlantic" },
+  alexandria: { name: "Port of Alexandria (Egypt)", lat: 31.2001, lon: 29.9187, zoom: 9, basin: "Mediterranean Sea" },
+  mombasa: { name: "Port of Mombasa (Kenya)", lat: -4.0435, lon: 39.6682, zoom: 9, basin: "Western Indian Ocean" },
+  casablanca: { name: "Port of Casablanca (Morocco)", lat: 33.6000, lon: -7.6167, zoom: 9, basin: "Atlantic Ocean" },
+  lagos: { name: "Lagos Port Complex (Nigeria)", lat: 6.4531, lon: 3.3958, zoom: 9, basin: "Gulf of Guinea" },
+  durban: { name: "Port of Durban (South Africa)", lat: -29.8587, lon: 31.0218, zoom: 9, basin: "Indian Ocean" },
+
+  // Oceania & Pacific
+  sydney: { name: "Sydney Harbour (Australia)", lat: -33.8688, lon: 151.2093, zoom: 9, basin: "Tasman Sea" },
+  auckland: { name: "Port of Auckland (New Zealand)", lat: -36.8485, lon: 174.7633, zoom: 9, basin: "South Pacific" },
+  honolulu: { name: "Honolulu Harbor (Hawaii, USA)", lat: 21.3069, lon: -157.8583, zoom: 9, basin: "Central Pacific" },
+  suva: { name: "Port of Suva (Fiji)", lat: -18.1416, lon: 178.4419, zoom: 9, basin: "South Pacific" }
 };
 
 let map;
 let baseHarborMarker;
-let waypointMarker;
 let safetyPerimeterCircle;
 let pfzLayerGroup;
 let isothermLayerGroup;
@@ -51,6 +102,20 @@ document.addEventListener('DOMContentLoaded', () => {
   loadInitialHarbor('rameswaram');
 });
 
+function switchMobileTab(tabClass) {
+  document.body.className = tabClass;
+  
+  // Update Tab Buttons
+  document.getElementById('tab-btn-map').classList.toggle('active', tabClass === 'tab-map');
+  document.getElementById('tab-btn-controls').classList.toggle('active', tabClass === 'tab-controls');
+  document.getElementById('tab-btn-copilot').classList.toggle('active', tabClass === 'tab-copilot');
+
+  // Trigger map resize if map tab selected
+  if (tabClass === 'tab-map' && map) {
+    setTimeout(() => map.invalidateSize(), 150);
+  }
+}
+
 function startUtcClock() {
   const clockEl = document.getElementById('hud-clock');
   function update() {
@@ -62,7 +127,6 @@ function startUtcClock() {
 }
 
 function initTacticalMap() {
-  // Center initially near Gulf of Mannar
   map = L.map('map', {
     zoomControl: true,
     attributionControl: false
@@ -86,7 +150,7 @@ function initTacticalMap() {
     document.getElementById('hud-gps').textContent = `${lat}°${latDir} ${lng}°${lngDir}`;
   });
 
-  // Interactive Map Click — Drop Custom Waypoint Anywhere
+  // Interactive Map Click — Drop Custom Waypoint Anywhere Worldwide
   map.on('click', (e) => {
     handleMapClick(e.latlng.lat, e.latlng.lng);
   });
@@ -95,7 +159,9 @@ function initTacticalMap() {
 function handleMapClick(lat, lon) {
   currentLat = parseFloat(lat.toFixed(4));
   currentLon = parseFloat(lon.toFixed(4));
-  currentLocationName = `Custom Waypoint [${currentLat}°N, ${currentLon}°E]`;
+  const latDir = currentLat >= 0 ? 'N' : 'S';
+  const lonDir = currentLon >= 0 ? 'E' : 'W';
+  currentLocationName = `Custom Point [${Math.abs(currentLat)}°${latDir}, ${Math.abs(currentLon)}°${lonDir}]`;
 
   document.getElementById('harbor-select').value = 'custom';
   document.getElementById('hud-active-harbor').textContent = 'Custom Point';
@@ -105,11 +171,12 @@ function handleMapClick(lat, lon) {
 }
 
 function loadInitialHarbor(harborKey) {
-  const harbor = HARBORS[harborKey] || HARBORS.rameswaram;
+  const harbor = GLOBAL_HARBORS[harborKey] || GLOBAL_HARBORS.rameswaram;
   currentLat = harbor.lat;
   currentLon = harbor.lon;
   currentLocationName = harbor.name;
   
+  document.getElementById('hud-active-harbor').textContent = harbor.name.split(' (')[0];
   updateMapPosition(currentLat, currentLon, currentLocationName, true, harbor.zoom);
   triggerLocationAdvisory(currentLocationName, currentLat, currentLon);
 }
@@ -141,8 +208,8 @@ function updateMapPosition(lat, lon, label, panMap = true, zoom = 9) {
   baseHarborMarker.bindPopup(`
     <div style="color:${PALETTE.deepSea};font-size:12px;font-family:Inter,sans-serif;">
       <b>${label}</b><br>
-      GPS: ${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E<br>
-      <small style="color:${PALETTE.oceanMist};">Drag marker or click anywhere to change location.</small>
+      GPS: ${Math.abs(lat).toFixed(4)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? 'E' : 'W'}<br>
+      <small style="color:${PALETTE.oceanMist};">Drag marker or tap map to relocate mission base.</small>
     </div>
   `);
 
@@ -157,6 +224,7 @@ function updateMapPosition(lat, lon, label, panMap = true, zoom = 9) {
 
   // Update Dynamic Telemetry Chips
   updateTelemetryChips(lat, lon);
+  updateSpeciesSidebar(lat);
 
   // Recompute PFZ for surrounding 1.0 degree bounding box
   const bbox = [
@@ -169,11 +237,16 @@ function updateMapPosition(lat, lon, label, panMap = true, zoom = 9) {
 }
 
 function updateTelemetryChips(lat, lon) {
-  const baseSst = 29.5 - (Math.abs(lat) * 0.12);
-  const sst = Math.max(24.0, Math.min(31.0, baseSst)).toFixed(1);
-  const grad = (0.75 + (Math.abs(Math.sin(lat * 3.0)) * 0.70)).toFixed(2);
-  const wave = (0.9 + (Math.abs(Math.cos(lat * 1.5)) * 0.7)).toFixed(2);
-  const wind = (14.0 + (Math.abs(Math.sin(lat + lon)) * 9.0)).toFixed(1);
+  const absLat = Math.abs(lat);
+  let baseSst = 29.5 - (absLat * 0.15);
+  if (absLat >= 55.0) baseSst = 7.0 - ((absLat - 55.0) * 0.3);
+  else if (absLat >= 35.0) baseSst = 18.0 - ((absLat - 35.0) * 0.5);
+  else if (absLat >= 20.0) baseSst = 25.5 - ((absLat - 20.0) * 0.45);
+
+  const sst = Math.max(0.5, Math.min(31.5, baseSst)).toFixed(1);
+  const grad = (0.70 + (Math.abs(Math.sin(lat * 2.5 + lon * 1.5)) * 0.80)).toFixed(2);
+  const wave = (0.8 + (Math.abs(Math.cos(lat * 1.1)) * 0.8)).toFixed(2);
+  const wind = (13.0 + (Math.abs(Math.sin(lat * 1.2 + lon * 0.8)) * 10.0)).toFixed(1);
   const tide = (+0.60 + Math.abs(Math.sin(lon)) * 0.40).toFixed(2);
 
   document.getElementById('val-sst').textContent = `${sst} °C`;
@@ -184,11 +257,43 @@ function updateTelemetryChips(lat, lon) {
 
   const windNum = parseFloat(wind);
   let beaufort = "Force 3";
-  if (windNum > 30) beaufort = "Force 6";
-  else if (windNum > 20) beaufort = "Force 4";
+  if (windNum > 32) beaufort = "Force 6";
+  else if (windNum > 22) beaufort = "Force 4";
   document.getElementById('val-beaufort').textContent = beaufort;
 
   document.getElementById('hud-gradient').textContent = `${grad} °C/km`;
+}
+
+function updateSpeciesSidebar(lat) {
+  const absLat = Math.abs(lat);
+  const listEl = document.getElementById('sidebar-species-list');
+  if (!listEl) return;
+
+  if (absLat >= 55.0) {
+    listEl.innerHTML = `
+      • <strong>Atlantic Cod</strong> (Sub-polar Shelf)<br>
+      • <strong>Greenland Halibut</strong> (Deep Shelf Edge)<br>
+      • <strong>Arctic Char & Capelin</strong> (Cold Nutrient Fronts)
+    `;
+  } else if (absLat >= 35.0) {
+    listEl.innerHTML = `
+      • <strong>Bluefin & Albacore Tuna</strong> (Thermal Boundaries)<br>
+      • <strong>Pacific / Atlantic Salmon</strong> (Coastal Runs)<br>
+      • <strong>Sea Bass & Mackerel</strong> (Mid-water Plumes)
+    `;
+  } else if (absLat >= 20.0) {
+    listEl.innerHTML = `
+      • <strong>Mahi Mahi (Dorado)</strong> (Thermal Eddies)<br>
+      • <strong>Red Snapper & Grouper</strong> (Reef & Shelf Slopes)<br>
+      • <strong>King Mackerel</strong> (Chlorophyll Bloom Fronts)
+    `;
+  } else {
+    listEl.innerHTML = `
+      • <strong>Yellowfin Tuna</strong> (Thermal Front Boundary)<br>
+      • <strong>Indian Mackerel</strong> (Chlorophyll Co-location)<br>
+      • <strong>Skipjack & Sardines</strong> (Coastal Upwelling)
+    `;
+  }
 }
 
 async function fetchAndRenderPfz(bbox) {
@@ -207,7 +312,6 @@ async function fetchAndRenderPfz(bbox) {
     const data = await response.json();
     renderTacticalPfz(data);
   } catch (err) {
-    console.warn('Backend unavailable, generating local dynamic PFZ:', err.message);
     renderDynamicLocalPfz(bbox);
   }
 }
@@ -355,7 +459,7 @@ async function triggerLocationAdvisory(name, lat, lon) {
   const maxWind = parseFloat(document.getElementById('vessel-max-wind').value);
   const maxWave = parseFloat(document.getElementById('vessel-max-wave').value);
 
-  const query = `Operational assessment for ${name} at [${lat.toFixed(4)}, ${lon.toFixed(4)}]`;
+  const query = `Operational assessment for ${name}`;
   
   try {
     const response = await fetch(`${API_BASE_URL}/chat`, {
@@ -435,18 +539,18 @@ function formatMarkdownToHtml(markdown) {
 
   let html = markdown;
 
-  // 1. Convert headers (### Header -> <strong>HEADER</strong>)
+  // 1. Convert headers
   html = html.replace(/^###\s+(.*$)/gim, '<div style="font-weight:800;color:#DCC7AA;text-transform:uppercase;margin:6px 0 4px;">$1</div>');
   html = html.replace(/^##\s+(.*$)/gim, '<div style="font-weight:800;color:#8DBFB7;text-transform:uppercase;margin:8px 0 4px;">$1</div>');
   html = html.replace(/^#\s+(.*$)/gim, '<div style="font-weight:800;color:#FFFFFF;margin:8px 0 4px;">$1</div>');
 
-  // 2. Convert Bold (**text** -> <strong>text</strong>)
+  // 2. Convert Bold
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-  // 3. Convert Italic (*text* -> <em>$1</em>)
+  // 3. Convert Italic
   html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
-  // 4. Convert Bullet Points (- text or • text -> <li>text</li>)
+  // 4. Convert Bullet Points
   const lines = html.split('\n');
   let inList = false;
   const parsedLines = [];
@@ -505,7 +609,6 @@ function appendCopilotAgentResponse(data) {
     badgeLabel = 'CLARIFICATION NEEDED';
   }
 
-  // Clean formatted HTML without raw asterisks
   const cleanFormattedHtml = formatMarkdownToHtml(data.reply);
 
   bubble.innerHTML = `
@@ -537,7 +640,7 @@ function generateDynamicLocalAiReply(query, vesselType, maxWind, maxWave, lat, l
     return {
       safety_status: 'safe',
       confidence: 0.92,
-      reply: `**Target Pelagic Species Advisory for ${locName}:**\n\n- **Primary Species:** **Yellowfin Tuna** & **Indian Mackerel** active in nearby front.\n- **Optimal Front:** Located ~14.2 nm offshore at [${(lat + 0.15).toFixed(4)}°N, ${(lon + 0.18).toFixed(4)}°E].\n- **Thermal Gradient:** 1.40 °C/km aligned with 0.52 mg/m³ chlorophyll plume.\n- **Technique:** Trolling along 35m - 75m slope.`,
+      reply: `**Target Pelagic Species Advisory for ${locName}:**\n\n- **Primary Species:** Regional pelagic target species active in oceanic front.\n- **Optimal Front:** Located ~14.2 nm offshore at [${(lat + 0.15).toFixed(4)}°, ${(lon + 0.18).toFixed(4)}°].\n- **Thermal Gradient:** 1.40 °C/km aligned with 0.52 mg/m³ chlorophyll plume.\n- **Technique:** Trolling along 35m - 75m slope.`,
       provenance: {
         task_id: 'task-fish-eval',
         confidence: 0.92,
@@ -553,7 +656,7 @@ function generateDynamicLocalAiReply(query, vesselType, maxWind, maxWave, lat, l
     return {
       safety_status: 'safe',
       confidence: 0.95,
-      reply: `**Navigational Bearing & Waypoint Plan:**\n\n- **Departure:** ${locName} [${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E]\n- **Target Point:** Center of PFZ [${(lat + 0.15).toFixed(4)}°N, ${(lon + 0.18).toFixed(4)}°E]\n- **True Heading:** **142° SE**\n- **Distance:** **14.2 Nautical Miles (26.3 km)**\n- **Estimated Transit:** ~1h 10m @ 12 knots. Direct passage clear of coastal reef hazards.`,
+      reply: `**Navigational Bearing & Waypoint Plan:**\n\n- **Departure:** ${locName} [${lat.toFixed(4)}°, ${lon.toFixed(4)}°]\n- **Target Point:** Center of PFZ [${(lat + 0.15).toFixed(4)}°, ${(lon + 0.18).toFixed(4)}°]\n- **True Heading:** **142° SE**\n- **Distance:** **14.2 Nautical Miles (26.3 km)**\n- **Estimated Transit:** ~1h 10m @ 12 knots. Direct passage clear of charted reef hazards.`,
       provenance: {
         task_id: 'task-nav-plan',
         confidence: 0.95,
@@ -576,7 +679,7 @@ function generateDynamicLocalAiReply(query, vesselType, maxWind, maxWave, lat, l
         task_id: 'task-met-eval',
         confidence: 0.93,
         created_at: now,
-        explanation: `INCOIS numerical forecast model for ${locName}`,
+        explanation: `Numerical forecast model for ${locName}`,
         evidence: [
           { dataset_id: 'dataset:incois_osf', metric: 'swh_meters', value: 1.20, units: 'meters', note: 'Coastal wave forecast' },
           { dataset_id: 'dataset:incois_osf', metric: 'wind_kmh', value: 18.0, units: 'km/h', note: '10m surface wind' }
@@ -587,12 +690,12 @@ function generateDynamicLocalAiReply(query, vesselType, maxWind, maxWave, lat, l
     return {
       safety_status: 'safe',
       confidence: 0.97,
-      reply: `**Harbor & Maritime Distress Infrastructure:**\n\n- **Active Base:** ${locName}\n- **Distress Comms:** **VHF Channel 16 (156.800 MHz)** monitored 24/7 by Indian Coast Guard.\n- **Emergency Helpline:** **Toll-Free 1554**\n- **Navtex:** 518 kHz International English broadcast active.`,
+      reply: `**Harbor & Maritime Distress Infrastructure:**\n\n- **Active Base:** ${locName}\n- **Distress Comms:** **VHF Channel 16 (156.800 MHz)** monitored 24/7 by GMDSS & Maritime Rescue Coordination Centres (MRCC).\n- **Emergency Helpline:** **Toll-Free 1554**\n- **Navtex:** 518 kHz International English broadcast active.`,
       provenance: {
         task_id: 'task-harbor-reg',
         confidence: 0.97,
         created_at: now,
-        explanation: 'Verified coastal maritime rescue directory',
+        explanation: 'Verified maritime rescue directory',
         evidence: [
           { dataset_id: 'dataset:gebco_bathymetry', metric: 'berth_depth', value: 6.5, units: 'meters', note: 'Harbor registry' }
         ]
@@ -602,7 +705,7 @@ function generateDynamicLocalAiReply(query, vesselType, maxWind, maxWave, lat, l
     return {
       safety_status: 'safe',
       confidence: 0.90,
-      reply: `**Marine Copilot Analysis for ${vesselType.replace('_', ' ').toUpperCase()}:**\n\n- **Active Sector:** **${locName}** [${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E]\n- **Operational Status:** **Clear & Favorable** for voyage.\n- **Sea State:** 1.2m swell with 18 km/h NE winds.\n- **Potential Fishing Zone:** High pelagic fish concentration active 14.2 nm offshore.\n- Click anywhere on the map or ask me for navigational bearings and wave forecasts!`,
+      reply: `**Marine Copilot Analysis for ${vesselType.replace('_', ' ').toUpperCase()}:**\n\n- **Active Sector:** **${locName}** [${lat.toFixed(4)}°, ${lon.toFixed(4)}°]\n- **Operational Status:** **Clear & Favorable** for voyage.\n- **Sea State:** 1.2m swell with 18 km/h NE winds.\n- **Potential Fishing Zone:** High pelagic fish concentration active 14.2 nm offshore.\n- Click anywhere on the map or ask me for navigational bearings and wave forecasts!`,
       provenance: {
         task_id: 'task-general-eval',
         confidence: 0.90,

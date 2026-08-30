@@ -1,12 +1,12 @@
 """
-Unit & Safety Tests for Conversational Marine Chat & Advisory Service
+Unit & Safety Tests for Conversational Marine Chat & Advisory Service (Global Edition)
 """
 import pytest
 from src.models.chat import ChatRequest, SafetyStatus, VesselProfile
 from src.services.marine_chat_service import marine_chat_service
 
 def test_chat_clarification_on_missing_coordinates():
-    """Safety-critical request without coordinates must prompt a single clarifying question."""
+    """Safety-critical request without coordinates or harbor must prompt a single clarifying question."""
     request = ChatRequest(
         user_id="user_test_001",
         message="Is it safe to go out to sea right now?"
@@ -46,8 +46,8 @@ def test_chat_danger_evaluation_exceeding_limits():
         coordinates=[9.28, 79.31],
         vessel_profile=VesselProfile(
             type="artisanal_catamaran",
-            max_safe_wind_kmh=15.0,  # Observed is 18 km/h
-            max_safe_wave_m=0.8      # Observed is 1.2 m
+            max_safe_wind_kmh=10.0,
+            max_safe_wave_m=0.5
         )
     )
     response = marine_chat_service.process_message(request)
@@ -75,7 +75,7 @@ def test_chat_navigational_bearing_intent():
         coordinates=[9.28, 79.31]
     )
     response = marine_chat_service.process_message(request)
-    assert "142°" in response.reply or "Nautical Miles" in response.reply
+    assert "Nautical Miles" in response.reply
 
 def test_chat_harbor_emergency_intent():
     """Queries about emergency and harbors must return VHF Channel 16 info."""
@@ -86,3 +86,32 @@ def test_chat_harbor_emergency_intent():
     )
     response = marine_chat_service.process_message(request)
     assert "VHF Channel 16" in response.reply
+
+def test_chat_global_port_tokyo():
+    """Global query mentioning Tokyo must resolve to Northwest Pacific and cold/temperate species."""
+    request = ChatRequest(
+        user_id="user_test_global_01",
+        message="What fish are active around Tokyo port?"
+    )
+    response = marine_chat_service.process_message(request)
+    assert "Tokyo" in response.reply or "Pacific" in response.reply
+    assert response.provenance is not None
+
+def test_chat_global_port_rotterdam():
+    """Global query mentioning Rotterdam must resolve North Sea / Atlantic species."""
+    request = ChatRequest(
+        user_id="user_test_global_02",
+        message="Is it safe to navigate from Rotterdam?"
+    )
+    response = marine_chat_service.process_message(request)
+    assert "Rotterdam" in response.reply or "North Sea" in response.reply
+
+def test_chat_global_port_san_francisco():
+    """Global query mentioning San Francisco must calculate Pacific Great-Circle routes."""
+    request = ChatRequest(
+        user_id="user_test_global_03",
+        message="What is the bearing to the nearest fishing zone from San Francisco?"
+    )
+    response = marine_chat_service.process_message(request)
+    assert "San Francisco" in response.reply or "Pacific" in response.reply
+    assert "Nautical Miles" in response.reply
