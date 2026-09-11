@@ -8,7 +8,7 @@ import { ThermalWindParticleCanvas } from './wind-engine.js';
 const API_BASE_URL = window.__ORCA_API_URL__ || (
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
     ? 'http://localhost:8000/v1'
-    : '/api/v1'
+    : '/v1'
 );
 
 // Strict Palette Constants
