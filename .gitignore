@@ -71,3 +71,6 @@ Thumbs.db
 /artifacts/
 /logs/
 /tmp/
+.vercel/
+~$*
+

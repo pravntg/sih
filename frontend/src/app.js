@@ -3,7 +3,11 @@
  * 50+ Worldwide Ports, Mobile Responsive Switching, Interactive Waypoint Placement & Clean Markdown Formatter
  */
 
-const API_BASE_URL = 'http://localhost:8000/v1';
+const API_BASE_URL = window.__ORCA_API_URL__ || (
+  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
+    ? 'http://localhost:8000/v1'
+    : '/api/v1'
+);
 
 // Strict Palette Constants
 const PALETTE = {
@@ -106,15 +110,23 @@ function switchMobileTab(tabClass) {
   document.body.className = tabClass;
   
   // Update Tab Buttons
-  document.getElementById('tab-btn-map').classList.toggle('active', tabClass === 'tab-map');
-  document.getElementById('tab-btn-controls').classList.toggle('active', tabClass === 'tab-controls');
-  document.getElementById('tab-btn-copilot').classList.toggle('active', tabClass === 'tab-copilot');
+  const btnMap = document.getElementById('tab-btn-map');
+  const btnControls = document.getElementById('tab-btn-controls');
+  const btnCopilot = document.getElementById('tab-btn-copilot');
+
+  if (btnMap) btnMap.classList.toggle('active', tabClass === 'tab-map');
+  if (btnControls) btnControls.classList.toggle('active', tabClass === 'tab-controls');
+  if (btnCopilot) btnCopilot.classList.toggle('active', tabClass === 'tab-copilot');
 
   // Trigger map resize if map tab selected
   if (tabClass === 'tab-map' && map) {
     setTimeout(() => map.invalidateSize(), 150);
   }
 }
+
+window.switchMobileTab = switchMobileTab;
+window.triggerQuickAction = triggerQuickAction;
+window.showProvenanceModal = showProvenanceModal;
 
 function startUtcClock() {
   const clockEl = document.getElementById('hud-clock');

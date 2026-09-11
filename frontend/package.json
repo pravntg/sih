@@ -10,9 +10,7 @@
     "check-palette": "node scripts/verify-palette.js"
   },
   "dependencies": {
-    "leaflet": "^1.9.4"
-  },
-  "devDependencies": {
+    "leaflet": "^1.9.4",
     "vite": "^5.1.4"
   }
 }
