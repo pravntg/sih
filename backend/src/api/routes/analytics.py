@@ -1,8 +1,9 @@
 """
-Analytics & PFZ API Endpoints
+Analytics, PFZ & Thermal Wind Vector API Endpoints
 """
 from fastapi import APIRouter, HTTPException, Depends
-from ...models.pfz import PfzRequest, PfzGeoJsonResponse
+from typing import List
+from ...models.pfz import PfzRequest, PfzGeoJsonResponse, WindVectorResponse
 from ...services.pfz_service import pfz_service
 from ...config import settings
 
@@ -24,3 +25,14 @@ async def compute_potential_fishing_zones(request: PfzRequest) -> PfzGeoJsonResp
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to compute PFZ analytics: {str(e)}")
+
+@router.post("/wind-vectors", response_model=WindVectorResponse)
+async def get_wind_vectors(request: PfzRequest) -> WindVectorResponse:
+    """
+    Calculate gridded U/V atmospheric vector streamlines using scientific oceanographic colormaps.
+    """
+    try:
+        result = pfz_service.compute_wind_vectors(bbox=request.bbox)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to compute wind vector grid: {str(e)}")

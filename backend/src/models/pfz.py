@@ -1,5 +1,5 @@
 """
-Potential Fishing Zone (PFZ) Data Models & GeoJSON Schema
+Potential Fishing Zone (PFZ) & Thermal Wind Vector Data Models
 """
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
@@ -38,3 +38,18 @@ class PfzGeoJsonResponse(BaseModel):
     features: List[PfzFeature]
     provenance: ProvenanceRecord
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+class WindVectorPoint(BaseModel):
+    lat: float
+    lon: float
+    u_ms: float
+    v_ms: float
+    speed_kmh: float
+    direction_deg: float
+    scientific_color: str
+
+class WindVectorResponse(BaseModel):
+    grid_resolution_deg: float
+    timestamp: str
+    vectors: List[WindVectorPoint]
+    provenance: ProvenanceRecord

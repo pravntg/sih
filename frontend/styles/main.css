@@ -408,17 +408,60 @@ body {
   color: #FFFFFF;
 }
 
-/* Map Popups */
-.leaflet-popup-content-wrapper {
-  background-color: #0B1220 !important;
-  color: #FFFFFF !important;
-  border: 1px solid var(--color-sandy-shore) !important;
-  border-radius: 6px !important;
-  box-shadow: none !important;
+/* ==========================================================================
+   Scientific Thermal Wind Streamlines & Legend Overlay
+   ========================================================================== */
+.wind-particle-canvas {
+  pointer-events: none;
 }
 
-.leaflet-popup-tip {
-  background-color: #0B1220 !important;
+.wind-legend-hud {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+  background-color: #0B1220;
+  border: 1px solid var(--color-sandy-shore);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  max-width: 260px;
+}
+
+.wind-legend-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--color-sandy-shore);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wind-legend-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid #000;
+}
+
+.wind-legend-seg {
+  flex: 1;
+  height: 100%;
+}
+
+.wind-legend-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  font-family: 'Inter', monospace;
+  font-weight: 600;
+  color: #FFFFFF;
 }
 
 /* ==========================================================================

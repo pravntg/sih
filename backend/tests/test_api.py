@@ -44,3 +44,16 @@ def test_api_pfz_analytics_flow():
     assert data["type"] == "FeatureCollection"
     assert len(data["features"]) > 0
     assert "provenance" in data
+
+def test_api_wind_vectors_flow():
+    payload = {
+        "bbox": [78.0, 8.0, 79.5, 9.5],
+        "target_date": "2026-08-30"
+    }
+    response = client.post("/v1/analytics/wind-vectors", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "vectors" in data
+    assert len(data["vectors"]) > 0
+    assert "scientific_color" in data["vectors"][0]
+    assert data["provenance"]["confidence"] >= 0.8

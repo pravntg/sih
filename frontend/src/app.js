@@ -3,6 +3,8 @@
  * 50+ Worldwide Ports, Mobile Responsive Switching, Interactive Waypoint Placement & Clean Markdown Formatter
  */
 
+import { ThermalWindParticleCanvas } from './wind-engine.js';
+
 const API_BASE_URL = window.__ORCA_API_URL__ || (
   (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
     ? 'http://localhost:8000/v1'
@@ -91,6 +93,7 @@ let baseHarborMarker;
 let safetyPerimeterCircle;
 let pfzLayerGroup;
 let isothermLayerGroup;
+let windCanvasLayer;
 let latestProvenance = null;
 
 // Current Active State
@@ -152,6 +155,17 @@ function initTacticalMap() {
 
   pfzLayerGroup = L.layerGroup().addTo(map);
   isothermLayerGroup = L.layerGroup().addTo(map);
+
+  // Initialize GPU-Accelerated Thermal Wind Streamlines (Scientific Researcher Colormap)
+  try {
+    windCanvasLayer = new ThermalWindParticleCanvas(map, {
+      particleCount: 2200,
+      speedFactor: 0.65,
+      fadeAlpha: 0.94
+    });
+  } catch (err) {
+    console.warn('Canvas Wind Particle Layer init failed:', err);
+  }
 
   // Mousemove Crosshair Coordinate Tracker
   map.on('mousemove', (e) => {
@@ -443,6 +457,22 @@ function setupTacticalEventListeners() {
     if (e.target.checked) map.addLayer(pfzLayerGroup);
     else map.removeLayer(pfzLayerGroup);
   });
+
+  const chkWind = document.getElementById('chk-wind');
+  if (chkWind) {
+    chkWind.addEventListener('change', (e) => {
+      if (windCanvasLayer) windCanvasLayer.toggle(e.target.checked);
+      const legend = document.getElementById('wind-legend');
+      if (legend) legend.style.display = e.target.checked ? 'flex' : 'none';
+    });
+  }
+
+  const windSpeedSelect = document.getElementById('wind-speed-select');
+  if (windSpeedSelect) {
+    windSpeedSelect.addEventListener('change', (e) => {
+      if (windCanvasLayer) windCanvasLayer.setSpeedFactor(parseFloat(e.target.value));
+    });
+  }
 
   // Provenance Modal
   document.getElementById('btn-show-provenance').addEventListener('click', showProvenanceModal);

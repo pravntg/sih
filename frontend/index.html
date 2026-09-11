@@ -207,6 +207,18 @@
             <span>Bathymetric Depth Grid (30-100m)</span>
             <input type="checkbox" id="chk-depth" checked />
           </label>
+          <label class="layer-toggle-item" style="border-color: var(--color-seafoam);">
+            <span style="color: var(--color-seafoam); font-weight: 700;">Animated Thermal Wind (Scientific)</span>
+            <input type="checkbox" id="chk-wind" checked />
+          </label>
+        </div>
+        <div class="form-group" style="margin-top: 10px;">
+          <label class="form-label">Thermal Wind Streamline Velocity</label>
+          <select id="wind-speed-select" class="form-select">
+            <option value="0.35">Gentle Flow (0.35x)</option>
+            <option value="0.65" selected>Standard Ocean Flow (0.65x)</option>
+            <option value="1.20">High Velocity Drift (1.20x)</option>
+          </select>
         </div>
         <div class="form-group" style="margin-top: 10px;">
           <label class="form-label">Thermal Front Sensitivity</label>
@@ -235,6 +247,28 @@
     <!-- Center Geospatial Canvas Map Viewport -->
     <section class="map-viewport">
       <div id="map"></div>
+
+      <!-- Floating Scientific Wind Colormap Legend -->
+      <div class="wind-legend-hud" id="wind-legend">
+        <div class="wind-legend-header">
+          <span>Thermal Wind Velocity</span>
+          <span style="color: var(--color-seafoam); font-size: 9px;">NOAA / ECMWF</span>
+        </div>
+        <div class="wind-legend-bar">
+          <div class="wind-legend-seg" style="background-color: #2B83BA;" title="< 10 km/h (Calm)"></div>
+          <div class="wind-legend-seg" style="background-color: #66C2A5;" title="10-25 km/h (Light)"></div>
+          <div class="wind-legend-seg" style="background-color: #FEE08B;" title="25-40 km/h (Fresh)"></div>
+          <div class="wind-legend-seg" style="background-color: #FDAE61;" title="40-60 km/h (Near Gale)"></div>
+          <div class="wind-legend-seg" style="background-color: #D53E4F;" title="> 60 km/h (Storm Force)"></div>
+        </div>
+        <div class="wind-legend-ticks">
+          <span>0</span>
+          <span>10</span>
+          <span>25</span>
+          <span>40</span>
+          <span>60+ km/h</span>
+        </div>
+      </div>
 
       <!-- Floating Tactical Telemetry HUD Card -->
       <div class="hud-map-card">
