@@ -296,3 +296,34 @@ def test_chat_project_orca_architecture():
         response = marine_chat_service.process_message(request)
         assert response.requires_clarification is False
         assert "Project ORCA" in response.reply or "Sentinel-3" in response.reply or "Thermal Front" in response.reply
+
+def test_chat_bearing_from_bombay_mumbai_alias():
+    """Bearing query from 'bombay' must accurately resolve to Bombay/Mumbai in Arabian Sea, not Rameswaram."""
+    queries = [
+        "What is the bearing to the nearest PFZ from bombay",
+        "What is the bearing to the nearest PFZ from madras",
+        "bearing to pfz from calcutta"
+    ]
+    
+    # 1. Bombay check
+    req_bombay = ChatRequest(user_id="user_bombay_test", message=queries[0])
+    resp_bombay = marine_chat_service.process_message(req_bombay)
+    assert resp_bombay.requires_clarification is False
+    assert "Bombay" in resp_bombay.reply or "Mumbai" in resp_bombay.reply
+    assert "Rameswaram" not in resp_bombay.reply
+    assert "Nautical Miles" in resp_bombay.reply
+
+    # 2. Madras check
+    req_madras = ChatRequest(user_id="user_madras_test", message=queries[1])
+    resp_madras = marine_chat_service.process_message(req_madras)
+    assert resp_madras.requires_clarification is False
+    assert "Madras" in resp_madras.reply or "Chennai" in resp_madras.reply
+    assert "Rameswaram" not in resp_madras.reply
+
+    # 3. Calcutta check
+    req_calcutta = ChatRequest(user_id="user_calcutta_test", message=queries[2])
+    resp_calcutta = marine_chat_service.process_message(req_calcutta)
+    assert resp_calcutta.requires_clarification is False
+    assert "Calcutta" in resp_calcutta.reply or "Kolkata" in resp_calcutta.reply
+    assert "Rameswaram" not in resp_calcutta.reply
+

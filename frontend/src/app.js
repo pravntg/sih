@@ -181,13 +181,145 @@ function initTacticalMap() {
     document.getElementById('hud-gps').textContent = `${lat}°${latDir} ${lng}°${lngDir}`;
   });
 
-  // Interactive Map Click — Drop Custom Waypoint Anywhere Worldwide
+  // Interactive Map Click — Drop Custom Waypoint Anywhere Worldwide (Marine Water Bodies Only)
   map.on('click', (e) => {
     handleMapClick(e.latlng.lat, e.latlng.lng);
   });
 }
 
+/**
+ * Validates whether a given latitude/longitude is located on marine water / coastal approaches
+ * and rejects deep inland terrestrial locations.
+ */
+function isMarineWaterCoordinate(lat, lon) {
+  // 1. Proximity to any known global or coastal harbor/port (within ~45 km / 0.45 deg)
+  for (const key in GLOBAL_HARBORS) {
+    const h = GLOBAL_HARBORS[key];
+    const dLat = lat - h.lat;
+    const dLon = lon - h.lon;
+    const distDeg = Math.sqrt(dLat * dLat + dLon * dLon);
+    if (distDeg <= 0.45) return true; // Safe coastal harbor buffer
+  }
+
+  // 2. Open Oceans & Basins:
+  // Southern Ocean / Antarctic waters
+  if (lat <= -55) return true;
+  // Arctic Ocean waters
+  if (lat >= 75) return true;
+
+  // Indian Ocean open waters (South of India, Arabian Sea, Bay of Bengal)
+  if (lat < 8.0 && lat > -55 && lon >= 40 && lon <= 110) return true;
+  if (lat >= 8.0 && lat <= 24.0) {
+    // Arabian Sea (West of India)
+    if (lon < 72.8 && lon >= 50.0) return true;
+    // Bay of Bengal (East of India)
+    if (lon > 80.2 && lon <= 98.0 && (lat <= 21.8 || (lat <= 22.8 && lon >= 88.5))) return true;
+    // Palk Strait / Gulf of Mannar
+    if (lat >= 8.0 && lat <= 10.5 && lon >= 77.5 && lon <= 80.0) return true;
+  }
+
+  // North Sea / Baltic / English Channel / Mediterranean / Red Sea / Persian Gulf
+  if (lat >= 50.0 && lat <= 62.0 && lon >= -4.0 && lon <= 9.0) return true; // North Sea
+  if (lat >= 53.0 && lat <= 66.0 && lon >= 10.0 && lon <= 30.0) return true; // Baltic Sea
+  if (lat >= 30.0 && lat <= 45.0 && lon >= -6.0 && lon <= 36.0) {
+    const isMedWater = (lat >= 33 && lat <= 43 && lon >= 0 && lon <= 30);
+    if (isMedWater) return true;
+  }
+  if (lat >= 12.0 && lat <= 30.0 && lon >= 32.0 && lon <= 44.0) return true; // Red Sea
+  if (lat >= 23.0 && lat <= 30.0 && lon >= 48.0 && lon <= 57.0) return true; // Persian Gulf
+
+  // Pacific Ocean (East Asia to Americas)
+  if (lon >= 105 && lon <= 180 && lat >= -50 && lat <= 55) {
+    if (lon >= 108 && lon <= 122 && lat >= 3 && lat <= 23) return true; // South China Sea
+    if (lon >= 125 && lat >= -45 && lat <= 50) return true; // Open Pacific
+  }
+  if (lon <= -115 && lon >= -180 && lat >= -55 && lat <= 60) return true; // East Pacific
+
+  // Atlantic Ocean
+  if (lon <= -15 && lon >= -65 && lat >= -55 && lat <= 65) {
+    if (lat >= -55 && lat <= 20 && lon <= -20 && lon >= -45) return true;
+    if (lat > 20 && lat <= 60 && lon <= -25 && lon >= -70) return true;
+  }
+
+  // 3. Reject Known Major Inland Terrestrial Landmass Zones:
+  // Inland India (Peninsula & Northern Plains far from coast)
+  if (lat >= 11.5 && lat <= 35.0 && lon >= 74.5 && lon <= 85.5) {
+    return false;
+  }
+  if (lat >= 20.0 && lat <= 36.0 && lon >= 70.0 && lon <= 90.0) {
+    return false; // Inland North/Central India
+  }
+
+  // North America Interior
+  if (lat >= 28.0 && lat <= 58.0 && lon >= -115.0 && lon <= -82.0) {
+    return false;
+  }
+
+  // South America Interior
+  if (lat >= -30.0 && lat <= 5.0 && lon >= -68.0 && lon <= -45.0) {
+    return false;
+  }
+
+  // Africa Interior
+  if (lat >= -25.0 && lat <= 32.0 && lon >= 12.0 && lon <= 38.0) {
+    return false;
+  }
+
+  // Eurasian Interior
+  if (lat >= 28.0 && lat <= 65.0 && lon >= 35.0 && lon <= 118.0) {
+    return false;
+  }
+
+  // Australia Interior
+  if (lat >= -32.0 && lat <= -18.0 && lon >= 118.0 && lon <= 145.0) {
+    return false;
+  }
+
+  // Default
+  return true;
+}
+
+function showLandRestrictionToast(lat, lon) {
+  const existingToast = document.getElementById('orca-land-restriction-toast');
+  if (existingToast) existingToast.remove();
+
+  const latDir = lat >= 0 ? 'N' : 'S';
+  const lonDir = lon >= 0 ? 'E' : 'W';
+
+  const toast = document.createElement('div');
+  toast.id = 'orca-land-restriction-toast';
+  toast.style.position = 'fixed';
+  toast.style.top = '72px';
+  toast.style.left = '50%';
+  toast.style.transform = 'translateX(-50%)';
+  toast.style.backgroundColor = 'rgba(13, 43, 69, 0.96)';
+  toast.style.color = '#F4F6F6';
+  toast.style.border = `1px solid ${PALETTE.sandyShore}`;
+  toast.style.borderRadius = '6px';
+  toast.style.padding = '10px 18px';
+  toast.style.fontSize = '12px';
+  toast.style.fontWeight = '600';
+  toast.style.zIndex = '99999';
+  toast.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.6)';
+  toast.style.pointerEvents = 'none';
+  toast.style.transition = 'all 0.3s ease';
+  toast.innerHTML = `⚠️ <b>Terrestrial Coordinate Rejected</b>: Point [${Math.abs(lat).toFixed(2)}°${latDir}, ${Math.abs(lon).toFixed(2)}°${lonDir}] is on inland terrain. Departure pins & waypoints can only be placed on marine waters, harbors, or coastal approaches.`;
+
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    if (toast.parentNode) {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }
+  }, 4000);
+}
+
 function handleMapClick(lat, lon) {
+  if (!isMarineWaterCoordinate(lat, lon)) {
+    showLandRestrictionToast(lat, lon);
+    return;
+  }
+
   currentLat = parseFloat(lat.toFixed(4));
   currentLon = parseFloat(lon.toFixed(4));
   const latDir = currentLat >= 0 ? 'N' : 'S';
@@ -233,6 +365,11 @@ function updateMapPosition(lat, lon, label, panMap = true, zoom = 9) {
   
   baseHarborMarker.on('dragend', (event) => {
     const position = event.target.getLatLng();
+    if (!isMarineWaterCoordinate(position.lat, position.lng)) {
+      showLandRestrictionToast(position.lat, position.lng);
+      baseHarborMarker.setLatLng([currentLat, currentLon]);
+      return;
+    }
     handleMapClick(position.lat, position.lng);
   });
 

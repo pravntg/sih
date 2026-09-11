@@ -331,6 +331,22 @@ GLOBAL_MARITIME_RAG_CORPUS: Dict[str, Dict[str, Any]] = {
         "mrcc": "Indian Coast Guard MRCC Mumbai (HQ West, 1554)",
         "notes": "Premier commercial and fishing hub of western India; active VTMS managing deep-draft cargo and thousands of trawlers."
     },
+    "bombay": {
+        "lat": 18.9220, "lon": 72.8347,
+        "name": "Sassoon Docks & Mumbai Port Trust (Bombay)",
+        "cluster": "Mumbai Harbour, Arabian Sea",
+        "vhf": "VHF Ch 12 / 16 (Mumbai VTS)",
+        "mrcc": "Indian Coast Guard MRCC Mumbai (HQ West, 1554)",
+        "notes": "Premier commercial and fishing hub of western India; active VTMS managing deep-draft cargo and thousands of trawlers."
+    },
+    "port of bombay": {
+        "lat": 18.9220, "lon": 72.8347,
+        "name": "Sassoon Docks & Mumbai Port Trust (Bombay)",
+        "cluster": "Mumbai Harbour, Arabian Sea",
+        "vhf": "VHF Ch 12 / 16 (Mumbai VTS)",
+        "mrcc": "Indian Coast Guard MRCC Mumbai (HQ West, 1554)",
+        "notes": "Premier commercial and fishing hub of western India; active VTMS managing deep-draft cargo and thousands of trawlers."
+    },
     "nhava sheva": {
         "lat": 18.9500, "lon": 72.9500,
         "name": "Jawaharlal Nehru Port Authority (JNPA / Nhava Sheva)",
@@ -395,7 +411,23 @@ GLOBAL_MARITIME_RAG_CORPUS: Dict[str, Dict[str, Any]] = {
         "mrcc": "Indian Coast Guard MRCC Chennai / Station Tuticorin (1554)",
         "notes": "Major all-weather deepwater seaport and heavy fishing center in southern Tamil Nadu."
     },
+    "thoothukudi": {
+        "lat": 8.7642, "lon": 78.1348,
+        "name": "V.O. Chidambaranar Port (Thoothukudi / Tuticorin)",
+        "cluster": "Gulf of Mannar, Indian Ocean",
+        "vhf": "VHF Ch 12 / 16",
+        "mrcc": "Indian Coast Guard Station Tuticorin (1554)",
+        "notes": "Deepwater major seaport on the Gulf of Mannar."
+    },
     "kochi": {
+        "lat": 9.9312, "lon": 76.2673,
+        "name": "Cochin Fishing Harbor & Port of Kochi",
+        "cluster": "Malabar Coast, Arabian Sea",
+        "vhf": "VHF Ch 12 / 16 (Kochi Port Control)",
+        "mrcc": "Indian Coast Guard MRCC Kochi / Southern Naval Command (1554)",
+        "notes": "Premier seafood export hub of India; Vallarpadam International Container Transshipment Terminal (ICTT)."
+    },
+    "cochin": {
         "lat": 9.9312, "lon": 76.2673,
         "name": "Cochin Fishing Harbor & Port of Kochi",
         "cluster": "Malabar Coast, Arabian Sea",
@@ -419,6 +451,22 @@ GLOBAL_MARITIME_RAG_CORPUS: Dict[str, Dict[str, Any]] = {
         "mrcc": "Indian Coast Guard MRCC Kochi (1554)",
         "notes": "Major trawl fishing centre; heavy seasonal shrimp and cuttlefish harvesting."
     },
+    "kollam": {
+        "lat": 8.8932, "lon": 76.5500,
+        "name": "Neendakara Port (Kollam / Quilon)",
+        "cluster": "South Kerala Coast, Arabian Sea",
+        "vhf": "VHF Ch 16",
+        "mrcc": "Indian Coast Guard MRCC Kochi (1554)",
+        "notes": "Major trawl fishing centre; heavy seasonal shrimp and cuttlefish harvesting."
+    },
+    "quilon": {
+        "lat": 8.8932, "lon": 76.5500,
+        "name": "Neendakara Port (Kollam / Quilon)",
+        "cluster": "South Kerala Coast, Arabian Sea",
+        "vhf": "VHF Ch 16",
+        "mrcc": "Indian Coast Guard MRCC Kochi (1554)",
+        "notes": "Major trawl fishing centre; heavy seasonal shrimp and cuttlefish harvesting."
+    },
     "vizhinjam": {
         "lat": 8.3756, "lon": 76.9906,
         "name": "Vizhinjam International Transshipment Port",
@@ -427,6 +475,22 @@ GLOBAL_MARITIME_RAG_CORPUS: Dict[str, Dict[str, Any]] = {
         "mrcc": "Indian Coast Guard Station Vizhinjam (1554)",
         "notes": "India's first mega deepwater container transshipment port with 20m natural draft."
     },
+    "trivandrum": {
+        "lat": 8.3756, "lon": 76.9906,
+        "name": "Vizhinjam (Thiruvananthapuram / Trivandrum)",
+        "cluster": "Trivandrum Coast, Arabian Sea / Indian Ocean",
+        "vhf": "VHF Ch 16 / 14",
+        "mrcc": "Indian Coast Guard Station Vizhinjam (1554)",
+        "notes": "Deepwater transshipment gateway and coastal pelagic fishing grounds."
+    },
+    "thiruvananthapuram": {
+        "lat": 8.3756, "lon": 76.9906,
+        "name": "Vizhinjam (Thiruvananthapuram / Trivandrum)",
+        "cluster": "Trivandrum Coast, Arabian Sea / Indian Ocean",
+        "vhf": "VHF Ch 16 / 14",
+        "mrcc": "Indian Coast Guard Station Vizhinjam (1554)",
+        "notes": "Deepwater transshipment gateway and coastal pelagic fishing grounds."
+    },
     "chennai": {
         "lat": 13.0827, "lon": 80.2707,
         "name": "Chennai Port & Kasimedu Fishing Harbor",
@@ -434,6 +498,38 @@ GLOBAL_MARITIME_RAG_CORPUS: Dict[str, Dict[str, Any]] = {
         "vhf": "VHF Ch 12 / 16",
         "mrcc": "Indian Coast Guard MRCC Chennai (HQ East, 1554)",
         "notes": "Oldest artificial harbour on India's east coast; Kasimedu accommodates over 1,500 mechanized trawlers."
+    },
+    "madras": {
+        "lat": 13.0827, "lon": 80.2707,
+        "name": "Chennai Port & Kasimedu Fishing Harbor (Madras)",
+        "cluster": "Coromandel Coast, Bay of Bengal",
+        "vhf": "VHF Ch 12 / 16",
+        "mrcc": "Indian Coast Guard MRCC Chennai (HQ East, 1554)",
+        "notes": "Oldest artificial harbour on India's east coast; Kasimedu accommodates over 1,500 mechanized trawlers."
+    },
+    "port of madras": {
+        "lat": 13.0827, "lon": 80.2707,
+        "name": "Chennai Port & Kasimedu Fishing Harbor (Madras)",
+        "cluster": "Coromandel Coast, Bay of Bengal",
+        "vhf": "VHF Ch 12 / 16",
+        "mrcc": "Indian Coast Guard MRCC Chennai (HQ East, 1554)",
+        "notes": "Oldest artificial harbour on India's east coast."
+    },
+    "calcutta": {
+        "lat": 22.5726, "lon": 88.3639,
+        "name": "Syama Prasad Mookerjee Port (Calcutta / Kolkata)",
+        "cluster": "Hooghly River / Bay of Bengal, West Bengal",
+        "vhf": "VHF Ch 12 / 16",
+        "mrcc": "Indian Coast Guard MRCC Kolkata (1554)",
+        "notes": "Historic riverine seaport serving eastern and northeastern India."
+    },
+    "kolkata": {
+        "lat": 22.5726, "lon": 88.3639,
+        "name": "Syama Prasad Mookerjee Port (Kolkata / Calcutta)",
+        "cluster": "Hooghly River / Bay of Bengal, West Bengal",
+        "vhf": "VHF Ch 12 / 16",
+        "mrcc": "Indian Coast Guard MRCC Kolkata (1554)",
+        "notes": "Historic riverine seaport serving eastern and northeastern India."
     },
     "kasimedu": {
         "lat": 13.1250, "lon": 80.2970,
