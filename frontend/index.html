@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Project ORCA — Global Marine Tactical Command Center</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="./styles/main.css">
 </head>
+
 <body class="tab-map">
 
   <!-- Top Tactical HUD Header -->
@@ -15,7 +18,7 @@
       <span class="hud-badge">ORCA HUD</span>
       <h1 class="hud-title">Global Marine Command Center</h1>
     </div>
-    
+
     <div class="hud-center-telemetry">
       <div class="hud-chip">
         <span class="hud-chip-label">GPS:</span>
@@ -74,7 +77,8 @@
   <!-- Mobile Viewport Navigation Tab Bar (Switches views on mobile & tablet) -->
   <nav class="mobile-nav-tabs">
     <button class="mobile-tab-btn active" id="tab-btn-map" onclick="switchMobileTab('tab-map')">📍 Ocean Map</button>
-    <button class="mobile-tab-btn" id="tab-btn-controls" onclick="switchMobileTab('tab-controls')">⚙️ Ports & Vessel</button>
+    <button class="mobile-tab-btn" id="tab-btn-controls" onclick="switchMobileTab('tab-controls')">⚙️ Ports &
+      Vessel</button>
     <button class="mobile-tab-btn" id="tab-btn-copilot" onclick="switchMobileTab('tab-copilot')">🤖 AI Copilot</button>
   </nav>
 
@@ -234,6 +238,18 @@
 
       <div class="tactical-panel">
         <div class="panel-header">
+          <span>Mission Dossier & Export</span>
+        </div>
+        <div style="font-size: 11px; line-height: 1.5; color: var(--color-sandy-shore); margin-bottom: 8px;">
+          Export official waypoint dossier, current wind & ocean state telemetry, vessel risk matrix, and cryptographic provenance as PDF.
+        </div>
+        <button id="btn-export-pdf" class="btn-action-primary" style="background-color: var(--color-seafoam); color: var(--color-deep-sea); font-weight: 800; border: none; cursor: pointer;">
+          📄 Export Mission Dossier (PDF)
+        </button>
+      </div>
+
+      <div class="tactical-panel">
+        <div class="panel-header">
           <span>Regional Target Species</span>
         </div>
         <div id="sidebar-species-list" style="font-size: 11px; line-height: 1.6; color: var(--color-sandy-shore);">
@@ -304,7 +320,9 @@
     <aside class="copilot-panel">
       <div class="copilot-header">
         <span class="copilot-title">ORCA Marine AI Copilot</span>
-        <span style="font-size: 10px; background-color: var(--color-seafoam); color: var(--color-deep-sea); padding: 2px 6px; border-radius: 3px; font-weight: 800;">AUTONOMOUS AGENT</span>
+        <span
+          style="font-size: 10px; background-color: var(--color-seafoam); color: var(--color-deep-sea); padding: 2px 6px; border-radius: 3px; font-weight: 800;">AUTONOMOUS
+          AGENT</span>
       </div>
 
       <div class="copilot-messages" id="chat-messages">
@@ -312,7 +330,8 @@
       </div>
 
       <div class="copilot-input-bar">
-        <input type="text" id="chat-input" class="copilot-input" placeholder="Query marine safety, bearings, or any port..." />
+        <input type="text" id="chat-input" class="copilot-input"
+          placeholder="Query marine safety, bearings, or any port..." />
         <button id="chat-send" class="copilot-send-btn">Send</button>
       </div>
     </aside>
@@ -332,7 +351,9 @@
   </div>
 
   <!-- Scripts -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script type="module" src="./src/app.js"></script>
 </body>
+
 </html>

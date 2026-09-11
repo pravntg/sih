@@ -630,9 +630,37 @@ class MarineChatService:
         else:
             regional_species = ["Yellowfin Tuna", "Skipjack Tuna", "Indian Mackerel", "Sardines"]
 
+        # =========================================================================
+        # 6B. COMPREHENSIVE VESSEL SEAWORTHINESS & RISK MATRIX EVALUATION
+        # =========================================================================
+        wave_risk_ratio = observed_wave_m / max(0.1, vessel.max_safe_wave_m)
+        wind_risk_ratio = observed_wind_kmh / max(1.0, vessel.max_safe_wind_kmh)
+
+        if wave_risk_ratio > 1.0 or wind_risk_ratio > 1.0:
+            computed_safety_status = SafetyStatus.DANGER
+            risk_badge = "🔴 DANGER — EXCEEDS VESSEL LIMITS (PROHIBITED)"
+            risk_summary = f"Observed sea conditions exceed {vessel.type.replace('_', ' ').title()} limits. Delay departure or seek immediate coastal shelter."
+        elif wave_risk_ratio >= 0.80 or wind_risk_ratio >= 0.80:
+            computed_safety_status = SafetyStatus.CAUTIOUS
+            risk_badge = "🟡 CAUTION — MARGINAL OPERATING ENVELOPE"
+            risk_summary = f"Conditions are near 80-100% of {vessel.type.replace('_', ' ').title()} safe operating envelope. Heightened watch & life jackets mandatory."
+        else:
+            computed_safety_status = SafetyStatus.SAFE
+            risk_badge = "🟢 CLEAR TO SAIL — WITHIN SAFE LIMITS"
+            risk_summary = f"Observed wave and wind conditions are fully within {vessel.type.replace('_', ' ').title()} seaworthiness limits."
+
+        vessel_matrix_section = (
+            f"\n\n**Ship Seaworthiness & Risk Matrix:**\n"
+            f"- **Vessel Configuration:** {vessel.type.replace('_', ' ').title()} (Max Wave: {vessel.max_safe_wave_m}m, Max Wind: {vessel.max_safe_wind_kmh} km/h)\n"
+            f"- **Wave Seaworthiness:** Observed **{observed_wave_m} m** vs Safe Limit **{vessel.max_safe_wave_m} m** [{'FAIL — DANGER' if wave_risk_ratio > 1.0 else ('MARGINAL' if wave_risk_ratio >= 0.8 else 'PASS — SAFE')}]\n"
+            f"- **Wind Resistance:** Observed **{observed_wind_kmh} km/h** vs Safe Limit **{vessel.max_safe_wind_kmh} km/h** [{'FAIL — DANGER' if wind_risk_ratio > 1.0 else ('MARGINAL' if wind_risk_ratio >= 0.8 else 'PASS — SAFE')}]\n"
+            f"- **Seaworthiness Status:** **{risk_badge}**\n"
+            f"- **Advisory Directive:** {risk_summary}"
+        )
+
         # INTENT A: Navigational Bearings
         if any(kw in msg_lower for kw in ["bearing", "route", "heading", "distance", "navigate", "direction", "how far", "waypoint", "reach"]):
-            safety_status = SafetyStatus.SAFE
+            safety_status = computed_safety_status
             confidence = 0.95
             transit_hours = dist_nm / 12.0
             hrs = int(transit_hours)
@@ -647,12 +675,13 @@ class MarineChatService:
                 f"- **Great-Circle Distance:** **{dist_nm} Nautical Miles** (~{dist_nm * 1.852:.1f} km)\n"
                 f"- **Estimated Transit:** ~{transit_str} @ 12 knots cruise.\n"
                 f"- **Navigational Assessment:** Offshore corridor clear of charted sub-surface hazards."
+                f"{vessel_matrix_section}"
             )
             suggested = ["Plot Waypoint on Map", "Check Swell Offset", "Confirm Fuel Reserve"]
 
         # INTENT B: Target Species & PFZ
         elif any(kw in msg_lower for kw in ["fish", "species", "tuna", "mackerel", "sardine", "cod", "salmon", "catch", "pfz", "fishing zone", "where to fish"]):
-            safety_status = SafetyStatus.SAFE
+            safety_status = computed_safety_status
             confidence = 0.92
             reply = (
                 f"**Global Potential Fishing Zone (PFZ) & Pelagic Species Advisory:**\n\n"
@@ -662,33 +691,33 @@ class MarineChatService:
                 f"- **Thermal Gradient:** **{observed_gradient} °C/km** (Optimal thermal front boundary).\n"
                 f"- **Chlorophyll-a Plume:** **{observed_chl} mg/m³** (Phytoplankton nutrient bloom).\n"
                 f"- **Recommended Methods:** Pelagic longlining, drift gillnetting, and mid-water trolling along shelf contours."
+                f"{vessel_matrix_section}"
             )
             suggested = ["Compute Nav Bearing to PFZ", "View SST Isotherms", "Check Depth Contours"]
 
         # INTENT C: Wave, Swell, Wind & Forecast
         elif any(kw in msg_lower for kw in ["weather", "wave", "swell", "wind", "forecast", "temp", "temperature", "sst", "tide"]):
-            is_wind_danger = observed_wind_kmh > vessel.max_safe_wind_kmh
-            is_wave_danger = observed_wave_m > vessel.max_safe_wave_m
+            safety_status = computed_safety_status
             confidence = 0.95
             
-            if is_wind_danger or is_wave_danger:
-                safety_status = SafetyStatus.DANGER
+            if computed_safety_status == SafetyStatus.DANGER:
                 reply = (
                     f"**Severe Sea State Alert for {location_label}:**\n\n"
                     f"- **Significant Wave Height:** **{observed_wave_m} m** (Exceeds {vessel.type.replace('_', ' ')} limit: {vessel.max_safe_wave_m} m)\n"
                     f"- **Surface Wind Speed:** **{observed_wind_kmh} km/h** with gusting squalls.\n"
                     f"- **Beaufort Scale:** Force 5 (Fresh Breeze).\n"
-                    f"- **Advisory:** **Delay departure.** Return to harbor or proceed to nearest sheltered coastal anchorage."
+                    f"- **Advisory Directive:** **Delay departure.** Return to harbor or proceed to nearest sheltered coastal anchorage."
+                    f"{vessel_matrix_section}"
                 )
             else:
-                safety_status = SafetyStatus.SAFE
                 reply = (
                     f"**24-Hour Ocean State & Meteorological Forecast for {location_label}:**\n\n"
                     f"- **Significant Wave Height:** **{observed_wave_m} m** (Swell period: 6.4s — Favorable for {vessel.type.replace('_', ' ')})\n"
                     f"- **Surface Wind:** **{observed_wind_kmh} km/h** ({observed_wind_kmh / 1.852:.1f} knots from {cardinal})\n"
                     f"- **Sea Surface Temperature (SST):** **{observed_sst_c} °C**\n"
                     f"- **Tidal Cycle:** Flood Tide (+0.80m rising)\n"
-                    f"- **Advisory:** Favorable marine window open for next 24-36 hours."
+                    f"- **Advisory Directive:** Favorable marine window open for voyage."
+                    f"{vessel_matrix_section}"
                 )
             suggested = ["Monitor Swell Trends", "View Satellite Wind Vectors", "Set 3-Hour Alarm"]
 
@@ -714,12 +743,13 @@ class MarineChatService:
                 f"- **Digital Selective Calling (DSC):** VHF Channel 70\n"
                 f"{helpline_text}"
                 f"- **Navtex Broadcasts:** 518 kHz (International English) operational."
+                f"{vessel_matrix_section}"
             )
             suggested = ["Show Global Ports on Map", "Copy Emergency Frequencies", "View Sheltered Anchorages"]
 
         # DEFAULT ADVISORY
         else:
-            safety_status = SafetyStatus.SAFE
+            safety_status = computed_safety_status
             confidence = 0.90
             reply = (
                 f"**Global Marine Intelligence Advisory for {vessel.type.replace('_', ' ').title()}:**\n\n"
@@ -727,6 +757,7 @@ class MarineChatService:
                 f"- **Sea State:** Wave height is **{observed_wave_m} m** with **{observed_wind_kmh} km/h** {cardinal} winds.\n"
                 f"- **Potential Fishing Opportunity:** Productive front active **{dist_nm} nm {cardinal}** with high **{', '.join(regional_species[:2])}** concentration.\n"
                 f"- You can ask for navigation bearings, wave forecasts, or specify any sea basin (e.g. 'Bay of Bengal', 'Arabian Sea', 'North Sea')!"
+                f"{vessel_matrix_section}"
             )
             suggested = ["Compute Optimal PFZ Bearing", "Check 24h Swell Forecast", "View Target Species"]
 
@@ -768,7 +799,9 @@ class MarineChatService:
                 "query": msg,
                 "location_label": location_label,
                 "coordinates": [lat, lon],
-                "vessel_type": vessel.type
+                "vessel_type": vessel.type,
+                "max_safe_wave_m": vessel.max_safe_wave_m,
+                "max_safe_wind_kmh": vessel.max_safe_wind_kmh
             },
             agent_chain=[
                 AgentChainStep(agent="maritime_rag_slm_router", version="v6.0"),

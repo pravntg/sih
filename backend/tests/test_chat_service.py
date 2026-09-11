@@ -327,3 +327,40 @@ def test_chat_bearing_from_bombay_mumbai_alias():
     assert "Calcutta" in resp_calcutta.reply or "Kolkata" in resp_calcutta.reply
     assert "Rameswaram" not in resp_calcutta.reply
 
+def test_chat_ship_seaworthiness_risk_matrix():
+    """Verify dynamic Ship Seaworthiness & Risk Matrix output and safety status calculation."""
+    # 1. Fragile vessel in standard sea state (should trigger danger)
+    fragile_vessel = VesselProfile(
+        type="artisanal_catamaran",
+        max_safe_wind_kmh=10.0,
+        max_safe_wave_m=0.5
+    )
+    req_danger = ChatRequest(
+        user_id="user_vessel_danger",
+        message="What is the bearing to the nearest PFZ from Bombay?",
+        vessel_profile=fragile_vessel
+    )
+    resp_danger = marine_chat_service.process_message(req_danger)
+    assert resp_danger.safety_status == SafetyStatus.DANGER
+    assert "Ship Seaworthiness & Risk Matrix" in resp_danger.reply
+    assert "DANGER" in resp_danger.reply
+    assert "Artisanal Catamaran" in resp_danger.reply
+
+    # 2. Large ocean liner (should be safe to sail)
+    robust_vessel = VesselProfile(
+        type="deep_sea_liner",
+        max_safe_wind_kmh=55.0,
+        max_safe_wave_m=4.5
+    )
+    req_safe = ChatRequest(
+        user_id="user_vessel_safe",
+        message="What is the bearing to the nearest PFZ from Bombay?",
+        vessel_profile=robust_vessel
+    )
+    resp_safe = marine_chat_service.process_message(req_safe)
+    assert resp_safe.safety_status == SafetyStatus.SAFE
+    assert "Ship Seaworthiness & Risk Matrix" in resp_safe.reply
+    assert "CLEAR TO SAIL" in resp_safe.reply
+    assert "Deep Sea Liner" in resp_safe.reply
+
+
