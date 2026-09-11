@@ -280,18 +280,103 @@ def cardinal_direction(bearing: float) -> str:
     return directions[idx]
 
 def extract_coordinates_from_text(text: str) -> Optional[Tuple[float, float]]:
-    """Extract latitude and longitude from messy strings (e.g. '13.08, 80.27', 'lat 9.28 lon 79.31')."""
-    # Pattern 1: standard floats separated by comma or space
-    match = re.search(r'([-+]?\d{1,2}(?:\.\d+)?)\s*[,;\s]\s*([-+]?\d{1,3}(?:\.\d+)?)', text)
-    if match:
+    """
+    Extract latitude and longitude from text supporting:
+    - Degrees with cardinal directions: '17.8°N, 84.2°E', '17.8° N, 84.2° E', '17.8N, 84.2E', '17.8°S, 84.2°W'
+    - Labeled format: 'lat: 17.8, lon: 84.2', 'lat 17.8 lng 84.2', 'latitude 17.8 longitude 84.2'
+    - Standard decimal pairs: '17.8, 84.2', '17.8 84.2', '-12.5, 77.2'
+    """
+    # 1. Degrees with cardinal letters (e.g. 17.8°N, 84.2°E or 17.8° N 84.2° E or 17.8N, 84.2E)
+    cardinal_match = re.search(
+        r'(\d{1,2}(?:\.\d+)?)\s*(?:°|deg|degrees)?\s*([NSns])\s*[,;\s/]\s*(\d{1,3}(?:\.\d+)?)\s*(?:°|deg|degrees)?\s*([EWew])',
+        text
+    )
+    if cardinal_match:
         try:
-            val1 = float(match.group(1))
-            val2 = float(match.group(2))
-            if -90.0 <= val1 <= 90.0 and -180.0 <= val2 <= 180.0:
-                return (val1, val2)
+            lat_val = float(cardinal_match.group(1))
+            lat_dir = cardinal_match.group(2).upper()
+            lon_val = float(cardinal_match.group(3))
+            lon_dir = cardinal_match.group(4).upper()
+            
+            lat = -lat_val if lat_dir == 'S' else lat_val
+            lon = -lon_val if lon_dir == 'W' else lon_val
+            if -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
+                return (lat, lon)
         except ValueError:
             pass
+
+    # 2. Explicit labeled format (e.g. lat: 17.8, lon: 84.2 or lat 17.8 lng 84.2)
+    labeled_match = re.search(
+        r'lat(?:itude)?\s*[:=]?\s*([-+]?\d{1,2}(?:\.\d+)?)\s*(?:°|deg)?\s*([NSns])?\s*[,;\s/]\s*(?:lon(?:gitude)?|lng)\s*[:=]?\s*([-+]?\d{1,3}(?:\.\d+)?)\s*(?:°|deg)?\s*([EWew])?',
+        text,
+        re.IGNORECASE
+    )
+    if labeled_match:
+        try:
+            lat = float(labeled_match.group(1))
+            if labeled_match.group(2) and labeled_match.group(2).upper() == 'S':
+                lat = -abs(lat)
+            lon = float(labeled_match.group(3))
+            if labeled_match.group(4) and labeled_match.group(4).upper() == 'W':
+                lon = -abs(lon)
+            if -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
+                return (lat, lon)
+        except ValueError:
+            pass
+
+    # 3. Standard decimal pairs (e.g. 17.8, 84.2 or 17.8° 84.2°)
+    decimal_match = re.search(
+        r'([-+]?\d{1,2}(?:\.\d+)?)\s*(?:°|deg)?\s*[,;\s]\s*([-+]?\d{1,3}(?:\.\d+)?)\s*(?:°|deg)?',
+        text
+    )
+    if decimal_match:
+        try:
+            lat = float(decimal_match.group(1))
+            lon = float(decimal_match.group(2))
+            if -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0:
+                return (lat, lon)
+        except ValueError:
+            pass
+
     return None
+
+MARITIME_VOCABULARY = {
+    # Ocean & Basins & Coastlines
+    "ocean", "sea", "bay", "gulf", "strait", "channel", "coast", "coastal", "shore", "beach",
+    "water", "waters", "offshore", "shelf", "inshore", "pelagic", "trench", "reef", "basin",
+    
+    # Harbors, Ports & Vessels
+    "port", "harbor", "harbour", "dock", "pier", "anchorage", "marina", "quay", "berth",
+    "vessel", "boat", "ship", "skiff", "catamaran", "trawler", "canoe", "craft", "motorized",
+    "artisanal", "fleet", "deck", "hull", "helm", "anchor",
+    
+    # Navigation & Coordinates
+    "sail", "sailing", "navigat", "bearing", "heading", "route", "waypoint", "drift", "speed",
+    "knot", "knots", "nm", "nautical", "coordinate", "coordinates", "lat", "lon", "gps", "depart",
+    "departure", "launch", "transit", "moor", "mooring",
+    
+    # Oceanography, Physics & Meteorology
+    "wave", "swell", "wind", "current", "tide", "tidal", "weather", "forecast", "temp",
+    "temperature", "sst", "chlorophyll", "upwelling", "salinity", "front", "isotherm",
+    "gradient", "storm", "cyclone", "typhoon", "hurricane", "gust", "squall", "monsoon",
+    "beaufort", "barometer", "pressure",
+    
+    # Fishing & PFZ
+    "fish", "fishing", "catch", "pfz", "species", "tuna", "mackerel", "sardine", "hilsa",
+    "cod", "salmon", "shrimp", "prawn", "crab", "squid", "yellowfin", "skipjack", "dorado",
+    "mahi", "snapper", "pomfret", "longline", "gillnet", "troll",
+    
+    # Safety & Emergency
+    "safe", "safety", "danger", "hazard", "advisory", "warning", "emergency", "mayday",
+    "sos", "vhf", "channel", "coast guard", "rescue", "clearance", "gmdss", "mrcc",
+    "incois", "sentinel", "modis", "satellite", "telemetry", "buoy", "condition", "state",
+    "alert", "ok", "clear"
+}
+
+OPERATIONAL_GREETINGS = {
+    "hi", "hello", "hey", "help", "who are you", "what can you do", "capabilities",
+    "start", "menu", "guide", "status", "info", "orca", "overview"
+}
 
 class MarineChatService:
     def __init__(self):
@@ -333,32 +418,9 @@ class MarineChatService:
             )
 
         # =========================================================================
-        # EDGE CASE 2: OUT-OF-SCOPE / OFF-TOPIC / JOKES / TRIVIA / NON-MARINE PROMPTS
+        # EDGE CASE 2: COORDINATE EXTRACTION & VALIDATION
         # =========================================================================
-        off_topic_keywords = [
-            "joke", "poem", "recipe", "pizza", "burger", "president", "prime minister",
-            "capital of", "sing a", "solve math", "python script", "write code", "javascript",
-            "who is", "who was", "movie", "cricket score", "football score", "translate this"
-        ]
-        is_gibberish = (
-            len(msg) < 3 or 
-            not re.search(r'[a-zA-Z]', msg) or 
-            bool(re.match(r'^[asdfghjklqwertyuiopzxcvbnm1234567890!@#$%^&*()_+=\-/?.,]+$', msg_lower) and len(msg_lower) > 6 and " " not in msg_lower)
-        )
-
-        if any(kw in msg_lower for kw in off_topic_keywords) or (is_gibberish and not request.coordinates):
-            return ChatResponse(
-                reply=(
-                    "**Project ORCA — Autonomous Marine Intelligence Copilot:**\n\n"
-                    "I am specialized exclusively in **oceanographic analysis**, **satellite Potential Fishing Zones (PFZ)**, **marine meteorological forecasts**, and **vessel safety clearances**.\n\n"
-                    "I cannot assist with general trivia, programming, or non-maritime topics. "
-                    "Please ask about sea conditions, navigational bearings, fish species, or select a coastal sector."
-                ),
-                safety_status=SafetyStatus.SAFE,
-                confidence=0.98,
-                requires_clarification=False,
-                suggested_actions=["Bay of Bengal Details", "Arabian Sea Conditions", "Rameswaram Base", "Kochi Harbor"]
-            )
+        extracted_coords = extract_coordinates_from_text(msg)
 
         # =========================================================================
         # EDGE CASE 3: TARGETED OCEAN / SEA BASIN QUERIES ("bay of bengal details", etc.)
@@ -414,7 +476,45 @@ class MarineChatService:
                 )
 
         # =========================================================================
-        # EDGE CASE 4: EXTREME DANGER / OVERRIDE CONDITIONS SPECIFIED IN PROMPT
+        # EDGE CASE 4: NON-MARINE / NO REFERENCE / USELESS INPUT WARNING
+        # (e.g. 'lady gaga', 'random celebrity', 'tell me a joke', 'recipe', gibberish)
+        # =========================================================================
+        query_tokens = set(re.findall(r'[a-zA-Z0-9]+', msg_lower))
+        has_harbor_reference = any(
+            (h in query_tokens if " " not in h else (f" {h} " in f" {msg_lower} "))
+            for h in GLOBAL_HARBOR_REGISTRY
+        )
+        has_maritime_words = any(
+            (w in query_tokens if " " not in w else (w in msg_lower))
+            for w in MARITIME_VOCABULARY
+        )
+        has_greetings = any(
+            (g in query_tokens if " " not in g else (g in msg_lower))
+            for g in OPERATIONAL_GREETINGS
+        )
+        has_coords = bool(extracted_coords or request.coordinates)
+
+        if not (has_harbor_reference or has_maritime_words or has_greetings or has_coords):
+            # Display explicit warning about no reference to marine domain
+            clean_display_msg = msg[:60] + ("..." if len(msg) > 60 else "")
+            return ChatResponse(
+                reply=(
+                    f"⚠️ **No Marine Reference Detected:**\n\n"
+                    f"Your query (\"*{clean_display_msg}*\") contains no reference to maritime operations, oceanography, fishing zones, coastal navigation, or valid geographic coordinates.\n\n"
+                    f"**How I can assist you:**\n"
+                    f"- **Sea Basin Conditions:** e.g., *'Bay of Bengal details'*, *'Arabian Sea status'*\n"
+                    f"- **Coordinate Analysis:** e.g., *'Is it safe at 17.8°N, 84.2°E?'*\n"
+                    f"- **Vessel Navigation:** e.g., *'What is the bearing to the nearest PFZ from Rameswaram?'*\n"
+                    f"- **Weather & Swell Advisory:** e.g., *'Check wave and wind forecast for Motorized Skiff'*"
+                ),
+                safety_status=SafetyStatus.SAFE,
+                confidence=0.98,
+                requires_clarification=False,
+                suggested_actions=["Bay of Bengal Details", "Check 17.8°N, 84.2°E", "Rameswaram Base", "Arabian Sea"]
+            )
+
+        # =========================================================================
+        # EDGE CASE 5: EXTREME DANGER / OVERRIDE CONDITIONS SPECIFIED IN PROMPT
         # =========================================================================
         extreme_danger = False
         if any(w in msg_lower for w in ["cyclone", "typhoon", "hurricane", "tsunami", "storm force", "gale force"]):

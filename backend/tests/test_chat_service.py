@@ -187,3 +187,35 @@ def test_chat_prompt_injection_defense():
     assert response.requires_clarification is False
     assert "operational marine intelligence" in response.reply.lower() or "safety advisory" in response.reply.lower()
 
+def test_chat_degree_coordinate_formats():
+    """User input with formats like '17.8°N, 84.2°E' or '17.8° N, 84.2° E' must be extracted and evaluated."""
+    formats = [
+        "17.8°N, 84.2°E",
+        "Is it safe to sail at 17.8° N, 84.2° E?",
+        "check conditions at 17.8N, 84.2E",
+        "lat: 17.8, lon: 84.2"
+    ]
+    for fmt in formats:
+        request = ChatRequest(user_id="user_deg_test", message=fmt)
+        response = marine_chat_service.process_message(request)
+        assert response.requires_clarification is False
+        assert "17.8000" in response.reply or "17.8" in response.reply or "Wave" in response.reply
+        assert "No Marine Reference Detected" not in response.reply
+
+def test_chat_no_marine_reference_lady_gaga():
+    """Useless/off-topic inputs like 'lady gaga' must warn the user of no marine reference."""
+    useless_inputs = [
+        "lady gaga",
+        "cristiano ronaldo",
+        "who is taylor swift",
+        "buy iphone 15 pro max",
+        "how to bake cookies"
+    ]
+    for inp in useless_inputs:
+        request = ChatRequest(user_id="user_useless_test", message=inp)
+        response = marine_chat_service.process_message(request)
+        assert response.requires_clarification is False
+        assert "No Marine Reference Detected" in response.reply
+        assert inp[:10] in response.reply or "query" in response.reply.lower()
+
+
