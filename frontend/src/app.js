@@ -144,24 +144,33 @@ function startUtcClock() {
 function initTacticalMap() {
   map = L.map('map', {
     zoomControl: true,
-    attributionControl: false
+    attributionControl: false,
+    minZoom: 3,
+    maxZoom: 15,
+    maxBounds: [[-85, -180], [85, 180]],
+    maxBoundsViscosity: 1.0,
+    worldCopyJump: false
   }).setView([currentLat, currentLon], 9);
 
-  // 100% Free, Watermark-Free ESRI Dark Gray Canvas Tiles
+  // 100% Free, Watermark-Free ESRI Dark Gray Canvas Tiles (Fixed Bounds, No Horizontal Replication)
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 16,
+    minZoom: 3,
+    maxZoom: 15,
+    noWrap: true,
+    bounds: [[-85, -180], [85, 180]],
     subdomains: ['server', 'services']
   }).addTo(map);
 
   pfzLayerGroup = L.layerGroup().addTo(map);
   isothermLayerGroup = L.layerGroup().addTo(map);
 
-  // Initialize GPU-Accelerated Thermal Wind Streamlines (Scientific Researcher Colormap)
+  // Initialize GPU-Accelerated Thermal Wind Streamlines (Scientific Researcher Colormap - Off by default)
   try {
     windCanvasLayer = new ThermalWindParticleCanvas(map, {
-      particleCount: 2200,
-      speedFactor: 0.65,
-      fadeAlpha: 0.94
+      particleCount: 800,
+      speedFactor: 0.60,
+      fadeAlpha: 0.92,
+      enabled: false
     });
   } catch (err) {
     console.warn('Canvas Wind Particle Layer init failed:', err);

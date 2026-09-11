@@ -25,11 +25,11 @@ function getScientificWindColor(speedKmh) {
 export class ThermalWindParticleCanvas {
   constructor(map, options = {}) {
     this.map = map;
-    this.particleCount = options.particleCount || 2200;
-    this.fadeAlpha = options.fadeAlpha || 0.94; // Trail persistence
-    this.speedFactor = options.speedFactor || 0.65;
-    this.lineWidth = options.lineWidth || 1.8;
-    this.enabled = true;
+    this.particleCount = options.particleCount || 800; // Clean, non-overlapping stream
+    this.fadeAlpha = options.fadeAlpha || 0.92; // Trail persistence
+    this.speedFactor = options.speedFactor || 0.60;
+    this.lineWidth = options.lineWidth || 1.3; // Crisp, subtle lines
+    this.enabled = options.enabled !== undefined ? options.enabled : false; // Off by default
 
     this.canvas = null;
     this.ctx = null;
