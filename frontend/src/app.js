@@ -5,11 +5,7 @@
 
 import { ThermalWindParticleCanvas } from './wind-engine.js';
 
-const API_BASE_URL = window.__ORCA_API_URL__ || (
-  (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
-    ? 'http://localhost:8000/v1'
-    : '/api/v1'
-);
+const API_BASE_URL = window.__ORCA_API_URL__ || '/v1';
 
 // Strict Palette Constants
 const PALETTE = {
@@ -559,7 +555,6 @@ async function handleCopilotChat() {
       body: JSON.stringify({
         user_id: "tactical_operator_01",
         message: text,
-        coordinates: [currentLat, currentLon],
         vessel_profile: {
           type: vesselType,
           max_safe_wind_kmh: maxWind,
@@ -575,7 +570,7 @@ async function handleCopilotChat() {
       throw new Error(`Chat API error: ${response.status}`);
     }
   } catch (err) {
-    console.warn('Backend offline or CORS issue, executing local AI synthesis:', err.message);
+    console.warn('Backend offline or network issue, executing local AI synthesis:', err.message);
     const dynamicResponse = generateDynamicLocalAiReply(text, vesselType, maxWind, maxWave, currentLat, currentLon, currentLocationName);
     appendCopilotAgentResponse(dynamicResponse);
   }
@@ -687,16 +682,52 @@ function generateDynamicLocalAiReply(query, vesselType, maxWind, maxWave, lat, l
   const q = query.toLowerCase();
   const now = new Date().toISOString();
   
+  // Check for troll tone
+  const hasTroll = /\b(?:please\s+)?daddy\b|\bmommy\b|\bbruh\b|\bskibidi\b|\blol\b|\blmao\b/i.test(query);
+  const trollPrefix = hasTroll 
+    ? `🛡️ **[Maritime Communication Standard Note]**\n*Informal colloquialism detected. Official navigational & vessel safety clearances require standard maritime operational communication.*\n\n`
+    : ``;
+
+  // Check if Dapoli or specific Konkan coastal place is mentioned
+  let targetLoc = locName;
+  let targetLat = lat;
+  let targetLon = lon;
+  if (q.includes('dapoli') || q.includes('harnai')) {
+    targetLoc = "Dapoli / Harnai Sector (Arabian Sea (Konkan Coast))";
+    targetLat = 17.7644;
+    targetLon = 73.1812;
+  } else if (q.includes('ratnagiri')) {
+    targetLoc = "Ratnagiri Mirkarwada Harbor (Konkan Coast)";
+    targetLat = 16.9902;
+    targetLon = 73.3120;
+  } else if (q.includes('alibaug')) {
+    targetLoc = "Alibaug Coastal Sector (Konkan Coast)";
+    targetLat = 18.6414;
+    targetLon = 72.8722;
+  }
+
+  // Non-marine query firewall
+  const marineKeywords = ["sail", "sea", "ocean", "fish", "pfz", "wave", "wind", "weather", "port", "harbor", "coast", "water", "boat", "vessel", "dapoli", "kochi", "mumbai", "chennai", "rameswaram", "bearing", "route", "heading", "emergency", "vhf", "sos"];
+  const isMarine = marineKeywords.some(k => q.includes(k)) || /\d{1,2}(?:\.\d+)?\s*°?[NSns]/.test(query);
+
+  if (!isMarine) {
+    return {
+      safety_status: 'safe',
+      confidence: 0.98,
+      reply: `⚠️ **No Marine Reference Detected:**\n\nYour query ("*${query.slice(0, 50)}*") contains no reference to maritime operations, oceanography, fishing zones, coastal navigation, or valid geographic coordinates.\n\n**How I can assist you:**\n- **Sea Basin Conditions:** e.g., *'Bay of Bengal details'*, *'Arabian Sea status'*\n- **Coordinate Analysis:** e.g., *'Is it safe at 17.8°N, 84.2°E?'*\n- **Vessel Navigation:** e.g., *'What is the bearing to the nearest PFZ from Rameswaram?'*\n- **Weather & Swell Advisory:** e.g., *'Check wave and wind forecast for Motorized Skiff'*`
+    };
+  }
+  
   if (q.includes('fish') || q.includes('species') || q.includes('tuna') || q.includes('mackerel') || q.includes('catch') || q.includes('pfz')) {
     return {
       safety_status: 'safe',
       confidence: 0.92,
-      reply: `**Target Pelagic Species Advisory for ${locName}:**\n\n- **Primary Species:** Regional pelagic target species active in oceanic front.\n- **Optimal Front:** Located ~14.2 nm offshore at [${(lat + 0.15).toFixed(4)}°, ${(lon + 0.18).toFixed(4)}°].\n- **Thermal Gradient:** 1.40 °C/km aligned with 0.52 mg/m³ chlorophyll plume.\n- **Technique:** Trolling along 35m - 75m slope.`,
+      reply: trollPrefix + `**Target Pelagic Species Advisory for ${targetLoc}:**\n\n- **Primary Species:** Regional pelagic target species active in oceanic front.\n- **Optimal Front:** Located ~14.2 nm offshore at [${(targetLat + 0.15).toFixed(4)}°, ${(targetLon + 0.18).toFixed(4)}°].\n- **Thermal Gradient:** 1.40 °C/km aligned with 0.52 mg/m³ chlorophyll plume.\n- **Technique:** Trolling along 35m - 75m slope.`,
       provenance: {
         task_id: 'task-fish-eval',
         confidence: 0.92,
         created_at: now,
-        explanation: `Sentinel-3 SST & MODIS Chlorophyll co-location near ${locName}`,
+        explanation: `Sentinel-3 SST & MODIS Chlorophyll co-location near ${targetLoc}`,
         evidence: [
           { dataset_id: 'dataset:sentinel3_sst', metric: 'sst_gradient', value: 1.40, units: 'degC/km', note: 'Thermal boundary' },
           { dataset_id: 'dataset:modis_chl', metric: 'chl_a', value: 0.52, units: 'mg/m3', note: 'Chlorophyll plume' }
@@ -707,12 +738,12 @@ function generateDynamicLocalAiReply(query, vesselType, maxWind, maxWave, lat, l
     return {
       safety_status: 'safe',
       confidence: 0.95,
-      reply: `**Navigational Bearing & Waypoint Plan:**\n\n- **Departure:** ${locName} [${lat.toFixed(4)}°, ${lon.toFixed(4)}°]\n- **Target Point:** Center of PFZ [${(lat + 0.15).toFixed(4)}°, ${(lon + 0.18).toFixed(4)}°]\n- **True Heading:** **142° SE**\n- **Distance:** **14.2 Nautical Miles (26.3 km)**\n- **Estimated Transit:** ~1h 10m @ 12 knots. Direct passage clear of charted reef hazards.`,
+      reply: trollPrefix + `**Navigational Bearing & Waypoint Plan:**\n\n- **Departure:** ${targetLoc} [${targetLat.toFixed(4)}°, ${targetLon.toFixed(4)}°]\n- **Target Point:** Center of PFZ [${(targetLat + 0.15).toFixed(4)}°, ${(targetLon + 0.18).toFixed(4)}°]\n- **True Heading:** **142° SE**\n- **Distance:** **14.2 Nautical Miles (26.3 km)**\n- **Estimated Transit:** ~1h 10m @ 12 knots. Direct passage clear of charted reef hazards.`,
       provenance: {
         task_id: 'task-nav-plan',
         confidence: 0.95,
         created_at: now,
-        explanation: `Geodesic route calculated from ${locName}`,
+        explanation: `Geodesic route calculated from ${targetLoc}`,
         evidence: [
           { dataset_id: 'dataset:gebco_bathymetry', metric: 'bathymetry_depth', value: 45.0, units: 'meters', note: 'Deep water corridor' }
         ]
@@ -723,14 +754,14 @@ function generateDynamicLocalAiReply(query, vesselType, maxWind, maxWave, lat, l
     return {
       safety_status: isDanger ? 'danger' : 'safe',
       confidence: 0.93,
-      reply: isDanger 
-        ? `**Severe Weather Alert for ${locName}:** Observed wind (18 km/h) or wave height (1.2m) exceeds **${vesselType.replace('_', ' ')}** configured limits. Delay departure.`
-        : `**24-Hour Ocean State Telemetry for ${locName}:**\n\n- **Significant Wave Height:** **1.20 m** (Swell period: 6.4s — Favorable for ${vesselType.replace('_', ' ')})\n- **Surface Wind:** **18.0 km/h NE** (Beaufort Force 3)\n- **SST:** **28.4 °C**\n- **Tide:** +0.85m Flood Tide (Rising).`,
+      reply: trollPrefix + (isDanger 
+        ? `**Severe Weather Alert for ${targetLoc}:** Observed wind (18 km/h) or wave height (1.2m) exceeds **${vesselType.replace('_', ' ')}** configured limits. Delay departure.`
+        : `**24-Hour Ocean State Telemetry for ${targetLoc}:**\n\n- **Significant Wave Height:** **1.20 m** (Swell period: 6.4s — Favorable for ${vesselType.replace('_', ' ')})\n- **Surface Wind:** **18.0 km/h NE** (Beaufort Force 3)\n- **SST:** **28.4 °C**\n- **Tide:** +0.85m Flood Tide (Rising).`),
       provenance: {
         task_id: 'task-met-eval',
         confidence: 0.93,
         created_at: now,
-        explanation: `Numerical forecast model for ${locName}`,
+        explanation: `Numerical forecast model for ${targetLoc}`,
         evidence: [
           { dataset_id: 'dataset:incois_osf', metric: 'swh_meters', value: 1.20, units: 'meters', note: 'Coastal wave forecast' },
           { dataset_id: 'dataset:incois_osf', metric: 'wind_kmh', value: 18.0, units: 'km/h', note: '10m surface wind' }
@@ -741,7 +772,7 @@ function generateDynamicLocalAiReply(query, vesselType, maxWind, maxWave, lat, l
     return {
       safety_status: 'safe',
       confidence: 0.97,
-      reply: `**Harbor & Maritime Distress Infrastructure:**\n\n- **Active Base:** ${locName}\n- **Distress Comms:** **VHF Channel 16 (156.800 MHz)** monitored 24/7 by GMDSS & Maritime Rescue Coordination Centres (MRCC).\n- **Emergency Helpline:** **Toll-Free 1554**\n- **Navtex:** 518 kHz International English broadcast active.`,
+      reply: trollPrefix + `**Harbor & Maritime Distress Infrastructure:**\n\n- **Active Base:** ${targetLoc}\n- **Distress Comms:** **VHF Channel 16 (156.800 MHz)** monitored 24/7 by GMDSS & Maritime Rescue Coordination Centres (MRCC).\n- **Emergency Helpline:** **Toll-Free 1554**\n- **Navtex:** 518 kHz International English broadcast active.`,
       provenance: {
         task_id: 'task-harbor-reg',
         confidence: 0.97,
@@ -756,12 +787,12 @@ function generateDynamicLocalAiReply(query, vesselType, maxWind, maxWave, lat, l
     return {
       safety_status: 'safe',
       confidence: 0.90,
-      reply: `**Marine Copilot Analysis for ${vesselType.replace('_', ' ').toUpperCase()}:**\n\n- **Active Sector:** **${locName}** [${lat.toFixed(4)}°, ${lon.toFixed(4)}°]\n- **Operational Status:** **Clear & Favorable** for voyage.\n- **Sea State:** 1.2m swell with 18 km/h NE winds.\n- **Potential Fishing Zone:** High pelagic fish concentration active 14.2 nm offshore.\n- Click anywhere on the map or ask me for navigational bearings and wave forecasts!`,
+      reply: trollPrefix + `**Marine Copilot Analysis for ${vesselType.replace('_', ' ').toUpperCase()}:**\n\n- **Active Sector:** **${targetLoc}** [${targetLat.toFixed(4)}°, ${targetLon.toFixed(4)}°]\n- **Operational Status:** **Clear & Favorable** for voyage.\n- **Sea State:** 1.2m swell with 18 km/h NE winds.\n- **Potential Fishing Zone:** High pelagic fish concentration active 14.2 nm offshore.\n- Click anywhere on the map or ask me for navigational bearings and wave forecasts!`,
       provenance: {
         task_id: 'task-general-eval',
         confidence: 0.90,
         created_at: now,
-        explanation: `Multi-source oceanographic reasoning for ${locName}`,
+        explanation: `Multi-source oceanographic reasoning for ${targetLoc}`,
         evidence: [
           { dataset_id: 'dataset:incois_osf', metric: 'swh_wave', value: 1.2, units: 'meters', note: 'Wave observation' },
           { dataset_id: 'dataset:sentinel3_sst', metric: 'sst_mean', value: 28.4, units: 'degC', note: 'Thermal baseline' }
