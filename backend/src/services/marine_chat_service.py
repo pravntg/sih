@@ -1,7 +1,12 @@
 """
-Conversational Marine Reasoning & Safety Advisory Service (Global + Edge-Case Hardened Edition)
-Features Out-of-Scope Firewall, Direct Ocean/Sea Basin Snapshots, Coordinate Regex Extraction,
-and Adverse Condition Overrides.
+Conversational Marine Reasoning & Safety Advisory Service (Global SLM + RAG Hardened Edition)
+Features:
+- Integrated Maritime RAG Engine covering 300+ global hub ports, adjacent satellite terminals, and coastal gazetteer.
+- Dedicated Project ORCA capabilities HUD for single-word greetings ('hi', 'hello', 'help').
+- Dedicated Project ORCA technical knowledge retriever (satellite pipeline, PFZ algorithm, vessel limits, provenance).
+- Non-marine domain firewall with actionable guidance.
+- Accurate coordinates extraction (degrees with cardinal direction, labeled, decimal).
+- True Great-Circle rhumb lines, regional oceanographic calculations, and local MRCC rescue routing.
 """
 from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime, timezone
@@ -13,79 +18,21 @@ from ..models.chat import ChatRequest, ChatResponse, SafetyStatus, VesselProfile
 from ..models.provenance import ProvenanceRecord, EvidenceItem, AgentChainStep
 from ..config import settings
 from .slm_intent_classifier import SLMIntentClassifier, COASTAL_GAZETTEER
+from .maritime_rag_engine import (
+    MaritimeRAGEngine,
+    GLOBAL_MARITIME_RAG_CORPUS,
+    ORCA_SYSTEM_WELCOME_HUD,
+    ORCA_SUGGESTED_WELCOME_ACTIONS
+)
 
-# Global Maritime Registry of 50+ Major Coastal Ports & Harbors Across All Continents
+# Combined Harbor Registry combining Coastal Gazetteer and RAG Corpus
 GLOBAL_HARBOR_REGISTRY: Dict[str, Tuple[float, float, str, str]] = {
-    **COASTAL_GAZETTEER,
-    # Asia & Indian Ocean
-    "rameswaram": (9.2876, 79.3129, "Rameswaram Base [Base 01]", "Indian Ocean / Gulf of Mannar"),
-    "mandapam": (9.2780, 79.1250, "Mandapam Fishing Harbor", "Palk Bay / Indian Ocean"),
-    "tuticorin": (8.7642, 78.1348, "V.O. Chidambaranar Port (Tuticorin)", "Gulf of Mannar"),
-    "thoothukudi": (8.7642, 78.1348, "V.O. Chidambaranar Port (Tuticorin)", "Gulf of Mannar"),
-    "kochi": (9.9312, 76.2673, "Cochin Fishing Harbor", "Arabian Sea"),
-    "cochin": (9.9312, 76.2673, "Cochin Fishing Harbor", "Arabian Sea"),
-    "chennai": (13.0827, 80.2707, "Chennai Kasimedu Harbor", "Bay of Bengal"),
-    "visakhapatnam": (17.6868, 83.2185, "Visakhapatnam Fishing Harbor", "Bay of Bengal"),
-    "vizag": (17.6868, 83.2185, "Visakhapatnam Fishing Harbor", "Bay of Bengal"),
-    "mumbai": (18.9220, 72.8347, "Sassoon Docks (Mumbai)", "Arabian Sea"),
-    "mangalore": (12.8698, 74.8430, "Old Port Mangalore", "Arabian Sea"),
-    "goa": (15.4050, 73.8050, "Mormugao Harbor (Goa)", "Arabian Sea"),
-    "veraval": (20.9000, 70.3667, "Veraval Harbor (Gujarat)", "Arabian Sea"),
-    "paradip": (20.3167, 86.6167, "Paradip Port (Odisha)", "Bay of Bengal"),
-    "port blair": (11.6234, 92.7265, "Phoenix Bay (Port Blair)", "Andaman Sea"),
-    "colombo": (6.9497, 79.8428, "Port of Colombo (Sri Lanka)", "Indian Ocean"),
-    "singapore": (1.290270, 103.851959, "Port of Singapore", "Strait of Malacca"),
-    "tokyo": (35.6528, 139.8394, "Port of Tokyo (Japan)", "Northwest Pacific Ocean"),
-    "shanghai": (31.2304, 121.4737, "Port of Shanghai (China)", "East China Sea"),
-    "busan": (35.1028, 129.0403, "Port of Busan (South Korea)", "Korea Strait"),
-    "dubai": (25.2697, 55.3095, "Port Rashid (Dubai, UAE)", "Persian Gulf"),
-    "karachi": (24.8406, 66.9744, "Karachi Fish Harbour (Pakistan)", "Arabian Sea"),
-    "chittagong": (22.3167, 91.8000, "Chattogram Port (Bangladesh)", "Bay of Bengal"),
-    "chattogram": (22.3167, 91.8000, "Chattogram Port (Bangladesh)", "Bay of Bengal"),
-    "jakarta": (-6.1039, 106.8825, "Tanjung Priok (Jakarta, Indonesia)", "Java Sea"),
-    "kaohsiung": (22.6167, 120.2833, "Port of Kaohsiung (Taiwan)", "South China Sea"),
-
-    # Americas (Atlantic & Pacific)
-    "san francisco": (37.8080, -122.4177, "Fisherman's Wharf (San Francisco, USA)", "Northeast Pacific"),
-    "seattle": (47.6062, -122.3321, "Port of Seattle (USA)", "Puget Sound / Pacific"),
-    "new york": (40.6892, -74.0445, "New York & New Jersey Harbor (USA)", "North Atlantic Ocean"),
-    "miami": (25.7781, -80.1791, "PortMiami (USA)", "Atlantic / Caribbean"),
-    "vancouver": (49.2827, -123.1207, "Port of Vancouver (Canada)", "Pacific Ocean"),
-    "halifax": (44.6488, -63.5752, "Port of Halifax (Canada)", "Northwest Atlantic"),
-    "valparaiso": (-33.0472, -71.6127, "Port of Valparaiso (Chile)", "Southeast Pacific"),
-    "lima": (-12.0565, -77.1478, "Port of Callao (Lima, Peru)", "Humboldt Current Pacific"),
-    "callao": (-12.0565, -77.1478, "Port of Callao (Lima, Peru)", "Humboldt Current Pacific"),
-    "santos": (-23.9618, -46.3042, "Port of Santos (Brazil)", "South Atlantic Ocean"),
-    "buenos aires": (-34.5997, -58.3731, "Puerto de Buenos Aires (Argentina)", "Rio de la Plata / Atlantic"),
-    "ensenada": (31.8578, -116.6058, "Port of Ensenada (Mexico)", "Pacific Ocean"),
-
-    # Europe (Atlantic, North Sea, Mediterranean, Baltic)
-    "rotterdam": (51.9244, 4.4777, "Port of Rotterdam (Netherlands)", "North Sea"),
-    "marseille": (43.2965, 5.3698, "Grand Port Maritime de Marseille (France)", "Mediterranean Sea"),
-    "genoa": (44.4056, 8.9463, "Port of Genoa (Italy)", "Ligurian / Mediterranean Sea"),
-    "piraeus": (37.9430, 23.6469, "Port of Piraeus (Athens, Greece)", "Aegean / Mediterranean Sea"),
-    "athens": (37.9430, 23.6469, "Port of Piraeus (Athens, Greece)", "Aegean / Mediterranean Sea"),
-    "bergen": (60.3913, 5.3221, "Port of Bergen (Norway)", "North Sea / Norwegian Sea"),
-    "hamburg": (53.5459, 9.9669, "Port of Hamburg (Germany)", "Elbe / North Sea"),
-    "barcelona": (41.3500, 2.1667, "Port of Barcelona (Spain)", "Mediterranean Sea"),
-    "southampton": (50.9097, -1.4044, "Port of Southampton (UK)", "English Channel"),
-    "lisbon": (38.7223, -9.1393, "Port of Lisbon (Portugal)", "Atlantic Ocean"),
-    "gdansk": (54.3722, 18.6383, "Port of Gdansk (Poland)", "Baltic Sea"),
-
-    # Africa (Atlantic & Indian Ocean)
-    "cape town": (-33.9189, 18.4233, "Port of Cape Town (South Africa)", "Atlantic / Benguela Upwelling"),
-    "alexandria": (31.2001, 29.9187, "Port of Alexandria (Egypt)", "Mediterranean Sea"),
-    "mombasa": (-4.0435, 39.6682, "Port of Mombasa (Kenya)", "Western Indian Ocean"),
-    "casablanca": (33.6000, -7.6167, "Port of Casablanca (Morocco)", "Canary Current Atlantic"),
-    "lagos": (6.4531, 3.3958, "Lagos Port Complex (Nigeria)", "Gulf of Guinea Atlantic"),
-    "durban": (-29.8587, 31.0218, "Port of Durban (South Africa)", "Agulhas Current Indian Ocean"),
-
-    # Oceania & Pacific
-    "sydney": (-33.8688, 151.2093, "Sydney Harbour (Australia)", "Tasman Sea / South Pacific"),
-    "auckland": (-36.8485, 174.7633, "Port of Auckland (New Zealand)", "Pacific Ocean"),
-    "honolulu": (21.3069, -157.8583, "Honolulu Harbor (Hawaii, USA)", "Central Pacific"),
-    "suva": (-18.1416, 178.4419, "Port of Suva (Fiji)", "South Pacific Ocean")
+    **COASTAL_GAZETTEER
 }
+
+for _k, _data in GLOBAL_MARITIME_RAG_CORPUS.items():
+    if _k not in GLOBAL_HARBOR_REGISTRY:
+        GLOBAL_HARBOR_REGISTRY[_k] = (_data["lat"], _data["lon"], _data["name"], _data["cluster"])
 
 # Targeted Global Sea & Oceanic Basins Directory
 GLOBAL_SEA_BASINS: Dict[str, Dict[str, Any]] = {
@@ -348,7 +295,7 @@ MARITIME_VOCABULARY = {
     "water", "waters", "offshore", "shelf", "inshore", "pelagic", "trench", "reef", "basin",
     
     # Harbors, Ports & Vessels
-    "port", "harbor", "harbour", "dock", "pier", "anchorage", "marina", "quay", "berth",
+    "port", "harbor", "harbour", "dock", "pier", "anchorage", "marina", "quay", "berth", "terminal",
     "vessel", "boat", "ship", "skiff", "catamaran", "trawler", "canoe", "craft", "motorized",
     "artisanal", "fleet", "deck", "hull", "helm", "anchor",
     
@@ -377,16 +324,17 @@ MARITIME_VOCABULARY = {
 
 OPERATIONAL_GREETINGS = {
     "hi", "hello", "hey", "help", "who are you", "what can you do", "capabilities",
-    "start", "menu", "guide", "status", "info", "orca", "overview"
+    "start", "menu", "guide", "status", "info", "orca", "overview", "greetings",
+    "good morning", "good afternoon", "good evening", "hola", "namaste"
 }
 
 class MarineChatService:
     def __init__(self):
-        self.version = "marine_chat_v5.0_hardened"
+        self.version = "marine_chat_v6.0_rag_slm"
 
     def process_message(self, request: ChatRequest, task_id: str = "task-chat-advisory") -> ChatResponse:
         """
-        Hardened Conversational Marine Advisory Engine handling off-topic queries, sea basins, coordinates, and safety.
+        Comprehensive Conversational Marine Advisory & SLM Knowledge Engine.
         """
         raw_msg = request.message.strip()
         cleaned_msg, has_troll_tone, troll_tokens = SLMIntentClassifier.sanitize_tone(raw_msg)
@@ -396,6 +344,31 @@ class MarineChatService:
         msg_lower = msg.lower()
         now_utc = datetime.now(timezone.utc)
         vessel = request.vessel_profile or VesselProfile()
+
+        # =========================================================================
+        # 0. DIRECT GREETING & ORCA SYSTEM CAPABILITIES ROUTER
+        # =========================================================================
+        if MaritimeRAGEngine.is_greeting(raw_msg):
+            return ChatResponse(
+                reply=ORCA_SYSTEM_WELCOME_HUD,
+                safety_status=SafetyStatus.SAFE,
+                confidence=1.0,
+                requires_clarification=False,
+                suggested_actions=ORCA_SUGGESTED_WELCOME_ACTIONS
+            )
+
+        # =========================================================================
+        # 0B. PROJECT ORCA ARCHITECTURAL KNOWLEDGE BASE (SIH26 DOMAIN RAG)
+        # =========================================================================
+        project_knowledge = MaritimeRAGEngine.query_project_knowledge(msg)
+        if project_knowledge:
+            return ChatResponse(
+                reply=project_knowledge,
+                safety_status=SafetyStatus.SAFE,
+                confidence=0.98,
+                requires_clarification=False,
+                suggested_actions=["Satellite Ingestion Pipeline", "PFZ Detection Algorithm", "Vessel Safety Limits", "Cryptographic Provenance"]
+            )
 
         # =========================================================================
         # EDGE CASE 1: PROMPT INJECTION / JAILBREAK / SYSTEM PROMPT ATTEMPTS
@@ -467,7 +440,7 @@ class MarineChatService:
                     created_at=now_utc,
                     user_context={"query": raw_msg, "basin_matched": basin_data['name']},
                     agent_chain=[
-                        AgentChainStep(agent="global_basin_classifier", version="v5.0", params={"basin": basin_key})
+                        AgentChainStep(agent="global_basin_classifier", version="v6.0", params={"basin": basin_key})
                     ],
                     evidence=evidence,
                     confidence=0.96,
@@ -482,12 +455,17 @@ class MarineChatService:
                 )
 
         # =========================================================================
+        # 4. RAG KNOWLEDGE QUERY: 300+ GLOBAL PORTS & SATELLITE TERMINALS
+        # =========================================================================
+        rag_port_data = MaritimeRAGEngine.query_rag_knowledge(msg)
+        coastal_entity = SLMIntentClassifier.resolve_coastal_entity(msg)
+
+        # =========================================================================
         # EDGE CASE 4: NON-MARINE / NO REFERENCE / USELESS INPUT WARNING
         # (e.g. 'lady gaga', 'random celebrity', 'tell me a joke', 'recipe', gibberish)
         # =========================================================================
         query_tokens = set(re.findall(r'[a-zA-Z0-9]+', msg_lower))
-        coastal_entity = SLMIntentClassifier.resolve_coastal_entity(msg)
-        has_harbor_reference = bool(coastal_entity) or any(
+        has_harbor_reference = bool(coastal_entity) or bool(rag_port_data) or any(
             (h in query_tokens if " " not in h else (f" {h} " in f" {msg_lower} "))
             for h in GLOBAL_HARBOR_REGISTRY
         )
@@ -509,7 +487,8 @@ class MarineChatService:
                     f"⚠️ **No Marine Reference Detected:**\n\n"
                     f"Your query (\"*{clean_display_msg}*\") contains no reference to maritime operations, oceanography, fishing zones, coastal navigation, or valid geographic coordinates.\n\n"
                     f"**How I can assist you:**\n"
-                    f"- **Sea Basin Conditions:** e.g., *'Bay of Bengal details'*, *'Arabian Sea status'*\n"
+                    f"- **Global & Satellite Ports:** e.g., *'Port of Vlaardingen'*, *'Rotterdam Maasvlakte'*, *'Dapoli Harnai'*\n"
+                    f"- **Sea Basin Conditions:** e.g., *'Bay of Bengal details'*, *'North Sea status'*\n"
                     f"- **Coordinate Analysis:** e.g., *'Is it safe at 17.8°N, 84.2°E?'*\n"
                     f"- **Vessel Navigation:** e.g., *'What is the bearing to the nearest PFZ from Rameswaram?'*\n"
                     f"- **Weather & Swell Advisory:** e.g., *'Check wave and wind forecast for Motorized Skiff'*"
@@ -517,7 +496,7 @@ class MarineChatService:
                 safety_status=SafetyStatus.SAFE,
                 confidence=0.98,
                 requires_clarification=False,
-                suggested_actions=["Bay of Bengal Details", "Check 17.8°N, 84.2°E", "Rameswaram Base", "Arabian Sea"]
+                suggested_actions=["Port of Vlaardingen", "Bay of Bengal Details", "Check 17.8°N, 84.2°E", "Dapoli Harnai Sector"]
             )
 
         # =========================================================================
@@ -550,17 +529,29 @@ class MarineChatService:
             )
 
         # =========================================================================
-        # 5. LOCATION RESOLUTION (COORDINATE PARSING & COASTAL GAZETTEER)
+        # 5. LOCATION RESOLUTION (COORDINATE PARSING, RAG RESOLUTION & GAZETTEER)
         # =========================================================================
         detected_harbor_name = None
         detected_harbor_coords = None
         detected_sea_basin = None
+        rag_vhf = None
+        rag_mrcc = None
+        rag_notes = None
 
-        # Check for extracted raw coordinates in text (e.g. "13.08, 80.27" or "17.8°N, 84.2°E")
         if extracted_coords:
             lat, lon = extracted_coords
             location_label = f"Target Coordinate [{abs(lat):.4f}°{'N' if lat>=0 else 'S'}, {abs(lon):.4f}°{'E' if lon>=0 else 'W'}]"
             detected_harbor_coords = (lat, lon)
+        elif rag_port_data:
+            lat = rag_port_data["lat"]
+            lon = rag_port_data["lon"]
+            detected_harbor_name = rag_port_data["name"]
+            detected_sea_basin = rag_port_data["cluster"]
+            detected_harbor_coords = (lat, lon)
+            location_label = f"{detected_harbor_name} [{detected_sea_basin}]"
+            rag_vhf = rag_port_data.get("vhf")
+            rag_mrcc = rag_port_data.get("mrcc")
+            rag_notes = rag_port_data.get("notes")
         elif coastal_entity:
             lat, lon = coastal_entity[0], coastal_entity[1]
             detected_harbor_name = coastal_entity[2]
@@ -597,8 +588,8 @@ class MarineChatService:
                 safety_status=SafetyStatus.CLARIFICATION_NEEDED,
                 confidence=0.95,
                 requires_clarification=True,
-                clarifying_question="Which harbor are you departing from or what are your latitude/longitude coordinates (e.g., Dapoli, Mumbai, Kochi, Chennai, Rameswaram, Rotterdam)?",
-                suggested_actions=["Dapoli / Harnai", "Mumbai Port", "Kochi Harbor", "Chennai Kasimedu", "Share GPS"]
+                clarifying_question="Which harbor are you departing from or what are your latitude/longitude coordinates (e.g., Vlaardingen, Rotterdam, Dapoli, Mumbai, Kochi, Chennai, Rameswaram)?",
+                suggested_actions=["Port of Vlaardingen", "Dapoli / Harnai", "Mumbai Port", "Kochi Harbor", "Chennai Kasimedu", "Share GPS"]
             )
 
         if lat is None or lon is None:
@@ -633,15 +624,43 @@ class MarineChatService:
         if abs_lat >= 55.0:
             regional_species = ["Atlantic Cod", "Greenland Halibut", "Arctic Char", "Capelin"]
         elif 35.0 <= abs_lat < 55.0:
-            regional_species = ["Pacific Salmon", "Bluefin Tuna", "Sea Bass", "Atlantic Mackerel"]
+            regional_species = ["North Sea Herring", "Atlantic Cod", "Mackerel", "Sea Bass"]
         elif 20.0 <= abs_lat < 35.0:
             regional_species = ["Mahi Mahi (Dorado)", "Red Snapper", "Yellowtail Amberjack", "Albacore"]
         else:
             regional_species = ["Yellowfin Tuna", "Skipjack Tuna", "Indian Mackerel", "Sardines"]
 
+        # =========================================================================
+        # 6B. COMPREHENSIVE VESSEL SEAWORTHINESS & RISK MATRIX EVALUATION
+        # =========================================================================
+        wave_risk_ratio = observed_wave_m / max(0.1, vessel.max_safe_wave_m)
+        wind_risk_ratio = observed_wind_kmh / max(1.0, vessel.max_safe_wind_kmh)
+
+        if wave_risk_ratio > 1.0 or wind_risk_ratio > 1.0:
+            computed_safety_status = SafetyStatus.DANGER
+            risk_badge = "🔴 DANGER — EXCEEDS VESSEL LIMITS (PROHIBITED)"
+            risk_summary = f"Observed sea conditions exceed {vessel.type.replace('_', ' ').title()} limits. Delay departure or seek immediate coastal shelter."
+        elif wave_risk_ratio >= 0.80 or wind_risk_ratio >= 0.80:
+            computed_safety_status = SafetyStatus.CAUTIOUS
+            risk_badge = "🟡 CAUTION — MARGINAL OPERATING ENVELOPE"
+            risk_summary = f"Conditions are near 80-100% of {vessel.type.replace('_', ' ').title()} safe operating envelope. Heightened watch & life jackets mandatory."
+        else:
+            computed_safety_status = SafetyStatus.SAFE
+            risk_badge = "🟢 CLEAR TO SAIL — WITHIN SAFE LIMITS"
+            risk_summary = f"Observed wave and wind conditions are fully within {vessel.type.replace('_', ' ').title()} seaworthiness limits."
+
+        vessel_matrix_section = (
+            f"\n\n**Ship Seaworthiness & Risk Matrix:**\n"
+            f"- **Vessel Configuration:** {vessel.type.replace('_', ' ').title()} (Max Wave: {vessel.max_safe_wave_m}m, Max Wind: {vessel.max_safe_wind_kmh} km/h)\n"
+            f"- **Wave Seaworthiness:** Observed **{observed_wave_m} m** vs Safe Limit **{vessel.max_safe_wave_m} m** [{'FAIL — DANGER' if wave_risk_ratio > 1.0 else ('MARGINAL' if wave_risk_ratio >= 0.8 else 'PASS — SAFE')}]\n"
+            f"- **Wind Resistance:** Observed **{observed_wind_kmh} km/h** vs Safe Limit **{vessel.max_safe_wind_kmh} km/h** [{'FAIL — DANGER' if wind_risk_ratio > 1.0 else ('MARGINAL' if wind_risk_ratio >= 0.8 else 'PASS — SAFE')}]\n"
+            f"- **Seaworthiness Status:** **{risk_badge}**\n"
+            f"- **Advisory Directive:** {risk_summary}"
+        )
+
         # INTENT A: Navigational Bearings
         if any(kw in msg_lower for kw in ["bearing", "route", "heading", "distance", "navigate", "direction", "how far", "waypoint", "reach"]):
-            safety_status = SafetyStatus.SAFE
+            safety_status = computed_safety_status
             confidence = 0.95
             transit_hours = dist_nm / 12.0
             hrs = int(transit_hours)
@@ -656,12 +675,13 @@ class MarineChatService:
                 f"- **Great-Circle Distance:** **{dist_nm} Nautical Miles** (~{dist_nm * 1.852:.1f} km)\n"
                 f"- **Estimated Transit:** ~{transit_str} @ 12 knots cruise.\n"
                 f"- **Navigational Assessment:** Offshore corridor clear of charted sub-surface hazards."
+                f"{vessel_matrix_section}"
             )
             suggested = ["Plot Waypoint on Map", "Check Swell Offset", "Confirm Fuel Reserve"]
 
         # INTENT B: Target Species & PFZ
         elif any(kw in msg_lower for kw in ["fish", "species", "tuna", "mackerel", "sardine", "cod", "salmon", "catch", "pfz", "fishing zone", "where to fish"]):
-            safety_status = SafetyStatus.SAFE
+            safety_status = computed_safety_status
             confidence = 0.92
             reply = (
                 f"**Global Potential Fishing Zone (PFZ) & Pelagic Species Advisory:**\n\n"
@@ -671,60 +691,73 @@ class MarineChatService:
                 f"- **Thermal Gradient:** **{observed_gradient} °C/km** (Optimal thermal front boundary).\n"
                 f"- **Chlorophyll-a Plume:** **{observed_chl} mg/m³** (Phytoplankton nutrient bloom).\n"
                 f"- **Recommended Methods:** Pelagic longlining, drift gillnetting, and mid-water trolling along shelf contours."
+                f"{vessel_matrix_section}"
             )
             suggested = ["Compute Nav Bearing to PFZ", "View SST Isotherms", "Check Depth Contours"]
 
         # INTENT C: Wave, Swell, Wind & Forecast
         elif any(kw in msg_lower for kw in ["weather", "wave", "swell", "wind", "forecast", "temp", "temperature", "sst", "tide"]):
-            is_wind_danger = observed_wind_kmh > vessel.max_safe_wind_kmh
-            is_wave_danger = observed_wave_m > vessel.max_safe_wave_m
+            safety_status = computed_safety_status
             confidence = 0.95
             
-            if is_wind_danger or is_wave_danger:
-                safety_status = SafetyStatus.DANGER
+            if computed_safety_status == SafetyStatus.DANGER:
                 reply = (
                     f"**Severe Sea State Alert for {location_label}:**\n\n"
                     f"- **Significant Wave Height:** **{observed_wave_m} m** (Exceeds {vessel.type.replace('_', ' ')} limit: {vessel.max_safe_wave_m} m)\n"
                     f"- **Surface Wind Speed:** **{observed_wind_kmh} km/h** with gusting squalls.\n"
                     f"- **Beaufort Scale:** Force 5 (Fresh Breeze).\n"
-                    f"- **Advisory:** **Delay departure.** Return to harbor or proceed to nearest sheltered coastal anchorage."
+                    f"- **Advisory Directive:** **Delay departure.** Return to harbor or proceed to nearest sheltered coastal anchorage."
+                    f"{vessel_matrix_section}"
                 )
             else:
-                safety_status = SafetyStatus.SAFE
                 reply = (
                     f"**24-Hour Ocean State & Meteorological Forecast for {location_label}:**\n\n"
                     f"- **Significant Wave Height:** **{observed_wave_m} m** (Swell period: 6.4s — Favorable for {vessel.type.replace('_', ' ')})\n"
                     f"- **Surface Wind:** **{observed_wind_kmh} km/h** ({observed_wind_kmh / 1.852:.1f} knots from {cardinal})\n"
                     f"- **Sea Surface Temperature (SST):** **{observed_sst_c} °C**\n"
                     f"- **Tidal Cycle:** Flood Tide (+0.80m rising)\n"
-                    f"- **Advisory:** Favorable marine window open for next 24-36 hours."
+                    f"- **Advisory Directive:** Favorable marine window open for voyage."
+                    f"{vessel_matrix_section}"
                 )
             suggested = ["Monitor Swell Trends", "View Satellite Wind Vectors", "Set 3-Hour Alarm"]
 
         # INTENT D: Emergency & Harbor Directory
-        elif any(kw in msg_lower for kw in ["harbor", "port", "emergency", "channel", "vhf", "sos", "shelter", "rescue", "mayday"]):
+        elif any(kw in msg_lower for kw in ["harbor", "port", "emergency", "channel", "vhf", "sos", "shelter", "rescue", "mayday", "vlaardingen"]):
             safety_status = SafetyStatus.SAFE
             confidence = 0.96
+            
+            vhf_text = f"- **Port Communications:** **{rag_vhf}**\n" if rag_vhf else ""
+            mrcc_text = f"- **Maritime Search & Rescue (MRCC):** **{rag_mrcc}**\n" if rag_mrcc else ""
+            notes_text = f"- **Harbor & Approach Notes:** {rag_notes}\n" if rag_notes else ""
+            
+            is_india_sector = any(ind in str(location_label).lower() for ind in ["india", "bay of bengal", "arabian sea", "gulf of mannar", "rameswaram", "mumbai", "chennai", "kochi", "dapoli", "andaman"])
+            helpline_text = "- **Emergency Helpline (India):** Toll-Free 1554 (Coast Guard MRCC)\n" if is_india_sector else ""
+
             reply = (
                 f"**International Maritime Distress & Port Infrastructure:**\n\n"
-                f"- **Operating Location:** {location_label}\n"
-                f"- **International Distress Frequencies:** **VHF Channel 16 (156.800 MHz)** and **MF 2182 kHz** monitored 24/7 by GMDSS & Maritime Rescue Coordination Centres (MRCC)\n"
+                f"- **Operating Location:** **{location_label}**\n"
+                f"{vhf_text}"
+                f"{mrcc_text}"
+                f"{notes_text}"
+                f"- **International Distress Frequencies:** **VHF Channel 16 (156.800 MHz)** and **MF 2182 kHz** monitored 24/7 by GMDSS & Maritime Rescue Coordination Centres.\n"
                 f"- **Digital Selective Calling (DSC):** VHF Channel 70\n"
-                f"- **Emergency Helpline (India):** Toll-Free 1554 (Coast Guard MRCC)\n"
+                f"{helpline_text}"
                 f"- **Navtex Broadcasts:** 518 kHz (International English) operational."
+                f"{vessel_matrix_section}"
             )
             suggested = ["Show Global Ports on Map", "Copy Emergency Frequencies", "View Sheltered Anchorages"]
 
         # DEFAULT ADVISORY
         else:
-            safety_status = SafetyStatus.SAFE
+            safety_status = computed_safety_status
             confidence = 0.90
             reply = (
                 f"**Global Marine Intelligence Advisory for {vessel.type.replace('_', ' ').title()}:**\n\n"
                 f"- **Operating Sector:** **{location_label}**\n"
                 f"- **Sea State:** Wave height is **{observed_wave_m} m** with **{observed_wind_kmh} km/h** {cardinal} winds.\n"
                 f"- **Potential Fishing Opportunity:** Productive front active **{dist_nm} nm {cardinal}** with high **{', '.join(regional_species[:2])}** concentration.\n"
-                f"- You can ask for navigation bearings, wave forecasts, or specify any sea basin (e.g. 'Bay of Bengal', 'Arabian Sea')!"
+                f"- You can ask for navigation bearings, wave forecasts, or specify any sea basin (e.g. 'Bay of Bengal', 'Arabian Sea', 'North Sea')!"
+                f"{vessel_matrix_section}"
             )
             suggested = ["Compute Optimal PFZ Bearing", "Check 24h Swell Forecast", "View Target Species"]
 
@@ -766,15 +799,17 @@ class MarineChatService:
                 "query": msg,
                 "location_label": location_label,
                 "coordinates": [lat, lon],
-                "vessel_type": vessel.type
+                "vessel_type": vessel.type,
+                "max_safe_wave_m": vessel.max_safe_wave_m,
+                "max_safe_wind_kmh": vessel.max_safe_wind_kmh
             },
             agent_chain=[
-                AgentChainStep(agent="hardened_marine_nlp_router", version="v5.0"),
-                AgentChainStep(agent="marine_safety_evaluator", version="v5.0", confidence_score=confidence)
+                AgentChainStep(agent="maritime_rag_slm_router", version="v6.0"),
+                AgentChainStep(agent="marine_safety_evaluator", version="v6.0", confidence_score=confidence)
             ],
             evidence=evidence,
             confidence=confidence,
-            explanation=f"Hardened geospatial marine reasoning for {location_label} against {vessel.type} limits."
+            explanation=f"Geospatial RAG marine reasoning for {location_label} against {vessel.type} limits."
         )
 
         return ChatResponse(
