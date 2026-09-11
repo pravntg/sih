@@ -127,10 +127,6 @@ function switchMobileTab(tabClass) {
   }
 }
 
-window.switchMobileTab = switchMobileTab;
-window.triggerQuickAction = triggerQuickAction;
-window.showProvenanceModal = showProvenanceModal;
-
 function startUtcClock() {
   const clockEl = document.getElementById('hud-clock');
   function update() {
@@ -142,6 +138,11 @@ function startUtcClock() {
 }
 
 function initTacticalMap() {
+  if (typeof L === 'undefined') {
+    setTimeout(initTacticalMap, 150);
+    return;
+  }
+  if (map) return;
   map = L.map('map', {
     zoomControl: true,
     attributionControl: false,
@@ -332,21 +333,27 @@ function updateSpeciesSidebar(lat) {
 }
 
 async function fetchAndRenderPfz(bbox) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3500);
+
   try {
     const response = await fetch(`${API_BASE_URL}/analytics/pfz`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         bbox: bbox,
         min_chlorophyll_threshold: 0.3,
         sst_gradient_threshold: parseFloat(document.getElementById('gradient-sens').value)
       })
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) throw new Error(`API Error: ${response.status}`);
     const data = await response.json();
     renderTacticalPfz(data);
   } catch (err) {
+    clearTimeout(timeoutId);
     renderDynamicLocalPfz(bbox);
   }
 }
@@ -512,10 +519,14 @@ async function triggerLocationAdvisory(name, lat, lon) {
 
   const query = `Operational assessment for ${name}`;
   
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3500);
+
   try {
     const response = await fetch(`${API_BASE_URL}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         user_id: "tactical_operator_01",
         message: query,
@@ -527,6 +538,7 @@ async function triggerLocationAdvisory(name, lat, lon) {
         }
       })
     });
+    clearTimeout(timeoutId);
 
     if (response.ok) {
       const data = await response.json();
@@ -535,6 +547,7 @@ async function triggerLocationAdvisory(name, lat, lon) {
       throw new Error(`Chat API error: ${response.status}`);
     }
   } catch (err) {
+    clearTimeout(timeoutId);
     const fallbackData = generateDynamicLocalAiReply(query, vesselType, maxWind, maxWave, lat, lon, name);
     appendCopilotAgentResponse(fallbackData);
   }
@@ -552,10 +565,14 @@ async function handleCopilotChat() {
   const maxWind = parseFloat(document.getElementById('vessel-max-wind').value);
   const maxWave = parseFloat(document.getElementById('vessel-max-wave').value);
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3500);
+
   try {
     const response = await fetch(`${API_BASE_URL}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         user_id: "tactical_operator_01",
         message: text,
@@ -567,6 +584,7 @@ async function handleCopilotChat() {
         }
       })
     });
+    clearTimeout(timeoutId);
 
     if (response.ok) {
       const data = await response.json();
@@ -575,6 +593,7 @@ async function handleCopilotChat() {
       throw new Error(`Chat API error: ${response.status}`);
     }
   } catch (err) {
+    clearTimeout(timeoutId);
     console.warn('Backend offline or CORS issue, executing local AI synthesis:', err.message);
     const dynamicResponse = generateDynamicLocalAiReply(text, vesselType, maxWind, maxWave, currentLat, currentLon, currentLocationName);
     appendCopilotAgentResponse(dynamicResponse);
@@ -798,3 +817,9 @@ function showProvenanceModal() {
 
   document.getElementById('provenance-modal').style.display = 'flex';
 }
+
+// Global Window Exports for HTML Event Handlers
+window.switchMobileTab = switchMobileTab;
+window.triggerQuickAction = triggerQuickAction;
+window.showProvenanceModal = showProvenanceModal;
+
