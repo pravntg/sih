@@ -218,4 +218,28 @@ def test_chat_no_marine_reference_lady_gaga():
         assert "No Marine Reference Detected" in response.reply
         assert inp[:10] in response.reply or "query" in response.reply.lower()
 
+def test_chat_dapoli_query_with_troll_tone():
+    """Query with specific Konkan coastal town (Dapoli) and troll phrase must resolve Dapoli and attach protocol notice."""
+    request = ChatRequest(
+        user_id="user_dapoli_test",
+        message="i am going sail today in dapoli . can i go please daddy ?"
+    )
+    response = marine_chat_service.process_message(request)
+    assert response.requires_clarification is False
+    assert "Dapoli" in response.reply
+    assert "Arabian Sea" in response.reply or "Konkan" in response.reply
+    assert "Maritime Communication" in response.reply or "Standard Note" in response.reply
+
+def test_chat_launch_ambiguous_no_location():
+    """Departure clearance query without any location must require clarification."""
+    request = ChatRequest(
+        user_id="user_ambig_test",
+        message="can i go sail right now?"
+    )
+    response = marine_chat_service.process_message(request)
+    assert response.requires_clarification is True
+    assert response.safety_status == SafetyStatus.CLARIFICATION_NEEDED
+    assert "harbor" in response.clarifying_question.lower() or "coordinates" in response.clarifying_question.lower()
+
+
 

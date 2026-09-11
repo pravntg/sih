@@ -12,9 +12,11 @@ import re
 from ..models.chat import ChatRequest, ChatResponse, SafetyStatus, VesselProfile
 from ..models.provenance import ProvenanceRecord, EvidenceItem, AgentChainStep
 from ..config import settings
+from .slm_intent_classifier import SLMIntentClassifier, COASTAL_GAZETTEER
 
 # Global Maritime Registry of 50+ Major Coastal Ports & Harbors Across All Continents
 GLOBAL_HARBOR_REGISTRY: Dict[str, Tuple[float, float, str, str]] = {
+    **COASTAL_GAZETTEER,
     # Asia & Indian Ocean
     "rameswaram": (9.2876, 79.3129, "Rameswaram Base [Base 01]", "Indian Ocean / Gulf of Mannar"),
     "mandapam": (9.2780, 79.1250, "Mandapam Fishing Harbor", "Palk Bay / Indian Ocean"),
@@ -386,7 +388,11 @@ class MarineChatService:
         """
         Hardened Conversational Marine Advisory Engine handling off-topic queries, sea basins, coordinates, and safety.
         """
-        msg = request.message.strip()
+        raw_msg = request.message.strip()
+        cleaned_msg, has_troll_tone, troll_tokens = SLMIntentClassifier.sanitize_tone(raw_msg)
+        
+        # Use cleaned message for operational evaluation
+        msg = cleaned_msg if cleaned_msg else raw_msg
         msg_lower = msg.lower()
         now_utc = datetime.now(timezone.utc)
         vessel = request.vessel_profile or VesselProfile()
@@ -420,7 +426,7 @@ class MarineChatService:
         # =========================================================================
         # EDGE CASE 2: COORDINATE EXTRACTION & VALIDATION
         # =========================================================================
-        extracted_coords = extract_coordinates_from_text(msg)
+        extracted_coords = extract_coordinates_from_text(raw_msg)
 
         # =========================================================================
         # EDGE CASE 3: TARGETED OCEAN / SEA BASIN QUERIES ("bay of bengal details", etc.)
@@ -459,7 +465,7 @@ class MarineChatService:
                     task_id=task_id,
                     trace_id=f"trace-basin-{uuid.uuid4().hex[:8]}",
                     created_at=now_utc,
-                    user_context={"query": msg, "basin_matched": basin_data['name']},
+                    user_context={"query": raw_msg, "basin_matched": basin_data['name']},
                     agent_chain=[
                         AgentChainStep(agent="global_basin_classifier", version="v5.0", params={"basin": basin_key})
                     ],
@@ -480,7 +486,8 @@ class MarineChatService:
         # (e.g. 'lady gaga', 'random celebrity', 'tell me a joke', 'recipe', gibberish)
         # =========================================================================
         query_tokens = set(re.findall(r'[a-zA-Z0-9]+', msg_lower))
-        has_harbor_reference = any(
+        coastal_entity = SLMIntentClassifier.resolve_coastal_entity(msg)
+        has_harbor_reference = bool(coastal_entity) or any(
             (h in query_tokens if " " not in h else (f" {h} " in f" {msg_lower} "))
             for h in GLOBAL_HARBOR_REGISTRY
         )
@@ -496,7 +503,7 @@ class MarineChatService:
 
         if not (has_harbor_reference or has_maritime_words or has_greetings or has_coords):
             # Display explicit warning about no reference to marine domain
-            clean_display_msg = msg[:60] + ("..." if len(msg) > 60 else "")
+            clean_display_msg = raw_msg[:60] + ("..." if len(raw_msg) > 60 else "")
             return ChatResponse(
                 reply=(
                     f"⚠️ **No Marine Reference Detected:**\n\n"
@@ -543,18 +550,23 @@ class MarineChatService:
             )
 
         # =========================================================================
-        # 5. LOCATION RESOLUTION (COORDINATE PARSING & GLOBAL HARBOR REGISTRY)
+        # 5. LOCATION RESOLUTION (COORDINATE PARSING & COASTAL GAZETTEER)
         # =========================================================================
         detected_harbor_name = None
         detected_harbor_coords = None
         detected_sea_basin = None
 
-        # Check for extracted raw coordinates in text (e.g. "13.08, 80.27")
-        extracted_coords = extract_coordinates_from_text(msg)
+        # Check for extracted raw coordinates in text (e.g. "13.08, 80.27" or "17.8°N, 84.2°E")
         if extracted_coords:
             lat, lon = extracted_coords
             location_label = f"Target Coordinate [{abs(lat):.4f}°{'N' if lat>=0 else 'S'}, {abs(lon):.4f}°{'E' if lon>=0 else 'W'}]"
             detected_harbor_coords = (lat, lon)
+        elif coastal_entity:
+            lat, lon = coastal_entity[0], coastal_entity[1]
+            detected_harbor_name = coastal_entity[2]
+            detected_sea_basin = coastal_entity[3]
+            detected_harbor_coords = (lat, lon)
+            location_label = f"{detected_harbor_name} ({detected_sea_basin})"
         else:
             for harbor_key, (h_lat, h_lon, h_name, h_basin) in GLOBAL_HARBOR_REGISTRY.items():
                 if harbor_key in msg_lower:
@@ -570,23 +582,28 @@ class MarineChatService:
                 lat, lon = request.coordinates[0], request.coordinates[1]
                 location_label = f"Sector [{abs(lat):.4f}°{'N' if lat>=0 else 'S'}, {abs(lon):.4f}°{'E' if lon>=0 else 'W'}]"
             else:
-                lat, lon = 9.2876, 79.3129
-                location_label = "Rameswaram Base (Indian Ocean)"
+                lat, lon = None, None
+                location_label = None
 
         # Check for direct launch queries without coordinates
         is_direct_launch_query = any(kw in msg_lower for kw in [
             "can i sail", "can i launch", "permission to sail", "clear to depart",
-            "safe to go out to sea", "is it safe to go", "safe to sail", "go out to sea"
+            "safe to go out to sea", "is it safe to go", "safe to sail", "go out to sea",
+            "going sail", "going to sail", "can i go", "permission to go"
         ])
         if is_direct_launch_query and not request.coordinates and not detected_harbor_coords and not extracted_coords:
             return ChatResponse(
-                reply="To provide an accurate safety advisory and ocean state clearance, please specify your coastal location or departure coordinates.",
+                reply="To provide an accurate safety advisory and ocean state clearance, please specify your coastal harbor or departure coordinates.",
                 safety_status=SafetyStatus.CLARIFICATION_NEEDED,
                 confidence=0.95,
                 requires_clarification=True,
-                clarifying_question="Which harbor are you departing from or what are your latitude/longitude coordinates (e.g., Rameswaram, Kochi, Tokyo, Rotterdam, San Francisco)?",
-                suggested_actions=["Rameswaram Base", "Kochi Harbor", "Tokyo Port", "Rotterdam Port", "Share GPS"]
+                clarifying_question="Which harbor are you departing from or what are your latitude/longitude coordinates (e.g., Dapoli, Mumbai, Kochi, Chennai, Rameswaram, Rotterdam)?",
+                suggested_actions=["Dapoli / Harnai", "Mumbai Port", "Kochi Harbor", "Chennai Kasimedu", "Share GPS"]
             )
+
+        if lat is None or lon is None:
+            lat, lon = 9.2876, 79.3129
+            location_label = "Rameswaram Base (Indian Ocean)"
 
         # =========================================================================
         # 6. PHYSICAL CALCULATIONS & DYNAMIC MULTI-INTENT RESPONSES
@@ -710,6 +727,14 @@ class MarineChatService:
                 f"- You can ask for navigation bearings, wave forecasts, or specify any sea basin (e.g. 'Bay of Bengal', 'Arabian Sea')!"
             )
             suggested = ["Compute Optimal PFZ Bearing", "Check 24h Swell Forecast", "View Target Species"]
+
+        if has_troll_tone:
+            troll_str = ", ".join(f"'{t}'" for t in troll_tokens[:2])
+            reply = (
+                f"🛡️ **[Maritime Communication Standard Note]**\n"
+                f"*Informal colloquialism detected ({troll_str}). Official navigational & vessel safety clearances require standard maritime operational communication.*\n\n"
+                + reply
+            )
 
         evidence = [
             EvidenceItem(
