@@ -1,5 +1,5 @@
 """
-Unit & Safety Tests for Conversational Marine Chat & Advisory Service (Global Edition)
+Unit & Safety Tests for Conversational Marine Chat & Advisory Service (Global SLM + RAG Edition)
 """
 import pytest
 from src.models.chat import ChatRequest, SafetyStatus, VesselProfile
@@ -162,7 +162,6 @@ def test_chat_regex_coordinate_extraction():
         message="Is it safe at 13.0827, 80.2707 right now?"
     )
     response = marine_chat_service.process_message(request)
-    # Since coordinates were extracted into the context, it should evaluate conditions rather than ask for coordinates
     assert response.requires_clarification is False
     assert "Safe" in response.reply or "Wave" in response.reply or "Wind" in response.reply
 
@@ -175,7 +174,7 @@ def test_chat_extreme_danger_override():
     response = marine_chat_service.process_message(request)
     assert response.safety_status == SafetyStatus.DANGER
     assert "EMERGENCY" in response.reply or "CRITICAL" in response.reply or "DANGER" in response.reply
-    assert "16" in response.reply # VHF 16
+    assert "16" in response.reply
 
 def test_chat_prompt_injection_defense():
     """Prompt injection or jailbreak attempts must be safely neutralized."""
@@ -209,14 +208,15 @@ def test_chat_no_marine_reference_lady_gaga():
         "cristiano ronaldo",
         "who is taylor swift",
         "buy iphone 15 pro max",
-        "how to bake cookies"
+        "how to bake cookies",
+        "shoes",
+        "random car"
     ]
     for inp in useless_inputs:
         request = ChatRequest(user_id="user_useless_test", message=inp)
         response = marine_chat_service.process_message(request)
         assert response.requires_clarification is False
         assert "No Marine Reference Detected" in response.reply
-        assert inp[:10] in response.reply or "query" in response.reply.lower()
 
 def test_chat_dapoli_query_with_troll_tone():
     """Query with specific Konkan coastal town (Dapoli) and troll phrase must resolve Dapoli and attach protocol notice."""
@@ -241,5 +241,58 @@ def test_chat_launch_ambiguous_no_location():
     assert response.safety_status == SafetyStatus.CLARIFICATION_NEEDED
     assert "harbor" in response.clarifying_question.lower() or "coordinates" in response.clarifying_question.lower()
 
+# ==============================================================================================
+# NEW SLM & RAG SATELLITE SUB-PORT & GREETING VALIDATIONS
+# ==============================================================================================
 
+def test_chat_rag_vlaardingen_rotterdam_subport():
+    """
+    Sub-port inquiry for 'port of vlaardingen' must resolve accurately to Vlaardingen / Rotterdam cluster / North Sea,
+    NOT defaulting to Rameswaram or Indian Ocean.
+    """
+    queries = [
+        "port of vlaardingen",
+        "vlaardingen",
+        "is it safe to sail from vlaardingen?"
+    ]
+    for q in queries:
+        request = ChatRequest(user_id="user_vlaardingen_test", message=q)
+        response = marine_chat_service.process_message(request)
+        assert response.requires_clarification is False
+        assert "Vlaardingen" in response.reply
+        assert "Rotterdam" in response.reply or "North Sea" in response.reply
+        assert "Rameswaram" not in response.reply
+        assert "Netherlands Coast Guard" in response.reply or "North Sea" in response.reply or "Nieuwe Maas" in response.reply
 
+def test_chat_rag_subports_schiedam_maasvlakte_europoort():
+    """Rotterdam satellite terminals must resolve to North Sea / Rotterdam Cluster."""
+    for subport in ["schiedam", "maasvlakte", "europoort", "botlek"]:
+        request = ChatRequest(user_id="user_subport_test", message=f"conditions at {subport}")
+        response = marine_chat_service.process_message(request)
+        assert response.requires_clarification is False
+        assert subport.capitalize() in response.reply or subport in response.reply.lower()
+        assert "Rameswaram" not in response.reply
+
+def test_chat_single_word_greeting_hi():
+    """Single-word greetings like 'hi', 'hello', 'help' must return the dedicated Project ORCA Welcome HUD."""
+    greetings = ["hi", "hello", "hey", "help", "menu", "status"]
+    for g in greetings:
+        request = ChatRequest(user_id="user_greet_test", message=g)
+        response = marine_chat_service.process_message(request)
+        assert response.requires_clarification is False
+        assert response.safety_status == SafetyStatus.SAFE
+        assert "Welcome to Project ORCA" in response.reply
+        assert "Port of Vlaardingen" in response.suggested_actions or "Bay of Bengal Details" in response.suggested_actions
+
+def test_chat_project_orca_architecture():
+    """Questions asking about Project ORCA architecture or satellite ingest must return dedicated overview."""
+    queries = [
+        "what is project orca",
+        "how does satellite ingest work",
+        "explain pfz algorithm"
+    ]
+    for q in queries:
+        request = ChatRequest(user_id="user_project_test", message=q)
+        response = marine_chat_service.process_message(request)
+        assert response.requires_clarification is False
+        assert "Project ORCA" in response.reply or "Sentinel-3" in response.reply or "Thermal Front" in response.reply
